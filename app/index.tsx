@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Button, SafeAreaView, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Button, Text, View } from "react-native";
 import {
   makeRedirectUri,
   useAuthRequest,
@@ -8,10 +8,9 @@ import {
   AuthSessionResult,
   AuthRequest,
 } from "expo-auth-session";
-import * as WebBrowser from 'expo-web-browser';
-import { fetch } from 'expo/fetch';
-import { Patient } from '@medplum/fhirtypes';
-
+import * as WebBrowser from "expo-web-browser";
+import { fetch } from "expo/fetch";
+import { Patient } from "@medplum/fhirtypes";
 
 // Based on https://docs.expo.dev/guides/authentication/#calendly
 WebBrowser.maybeCompleteAuthSession();
@@ -25,9 +24,14 @@ const oAuth2Endpoints = {
 
 const baseFHIRUrl = "https://api.medplum.com/fhir/R4";
 
-async function handleLogin(loginRequest: AuthRequest, loginResponse: AuthSessionResult): Promise<TokenResponse> {
+async function handleLogin(
+  loginRequest: AuthRequest,
+  loginResponse: AuthSessionResult,
+): Promise<TokenResponse> {
   if (loginResponse.type !== "success") {
-    throw new Error("Authentication error", {cause: "Unexpected response type != success"});
+    throw new Error("Authentication error", {
+      cause: "Unexpected response type != success",
+    });
   }
 
   try {
@@ -40,14 +44,20 @@ async function handleLogin(loginRequest: AuthRequest, loginResponse: AuthSession
           code_verifier: loginRequest.codeVerifier ?? "",
         },
       },
-      oAuth2Endpoints
+      oAuth2Endpoints,
     );
   } catch (error) {
-    throw new Error("Authentication error on exchangeCodeAsync", {cause: error});
+    throw new Error("Authentication error on exchangeCodeAsync", {
+      cause: error,
+    });
   }
 }
 
-async function fhirFetch(url: string, authTokens: TokenResponse, init?: Parameters<typeof fetch>[1]) {
+async function fhirFetch(
+  url: string,
+  authTokens: TokenResponse,
+  init?: Parameters<typeof fetch>[1],
+) {
   const response = await fetch(`${baseFHIRUrl}/${url}`, {
     ...init,
     headers: {
@@ -89,7 +99,7 @@ export default function Index() {
       }),
       scopes: ["openid"],
     },
-    oAuth2Endpoints
+    oAuth2Endpoints,
   );
   const [loading, setLoading] = useState(false);
   const [patient, setPatient] = useState<Patient>();
@@ -101,13 +111,15 @@ export default function Index() {
 
     if (loginResponse.type === "error") {
       Alert.alert(
-        'Authentication error',
-        loginResponse.params.error_description || 'something went wrong'
+        "Authentication error",
+        loginResponse.params.error_description || "something went wrong",
       );
     }
     if (loginResponse.type === "success") {
       setLoading(true);
-      handleLogin(loginRequest, loginResponse).then(setAuthTokens).finally(() => setLoading(false));
+      handleLogin(loginRequest, loginResponse)
+        .then(setAuthTokens)
+        .finally(() => setLoading(false));
     }
   }, [loginRequest, loginResponse]);
 
@@ -115,28 +127,36 @@ export default function Index() {
   useEffect(() => {
     if (authTokens) {
       setLoading(true);
-      fetchLoggedPatient(authTokens).then(setPatient).finally(() => setLoading(false));
+      fetchLoggedPatient(authTokens)
+        .then(setPatient)
+        .finally(() => setLoading(false));
     }
   }, [authTokens]);
 
   return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        {loading && <ActivityIndicator />}
-        {!loading && patient && <Text>Hello {patient.name?.[0]?.given?.[0]} {patient.name?.[0]?.family}</Text>}
-        {!loading && !patient && <Button
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      {loading && <ActivityIndicator />}
+      {!loading && patient && (
+        <Text>
+          Hello {patient.name?.[0]?.given?.[0]} {patient.name?.[0]?.family}
+        </Text>
+      )}
+      {!loading && !patient && (
+        <Button
           title="Connect to Medplum"
           disabled={!loginRequest}
           onPress={() => {
             setLoading(true);
             promptLoginAsync().finally(() => setLoading(false));
           }}
-        />}
-      </View>
+        />
+      )}
+    </View>
   );
 }
