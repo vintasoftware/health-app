@@ -1,92 +1,81 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Button, Text, View } from "react-native";
+import { LoginState, MedplumClient } from "@medplum/core";
 import {
   makeRedirectUri,
   useAuthRequest,
   exchangeCodeAsync,
-  TokenResponse,
   AuthSessionResult,
   AuthRequest,
+  ResponseError,
+  TokenError,
 } from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import { fetch } from "expo/fetch";
 import { Patient } from "@medplum/fhirtypes";
+import { useMedplum } from "@medplum/react-hooks";
 
 // Based on https://docs.expo.dev/guides/authentication/#calendly
 WebBrowser.maybeCompleteAuthSession();
 
-const oauth2ClientId = "848afde1-2521-4ef5-8b6d-4dc44ee7a304";
+const oauth2ClientId = process.env.EXPO_PUBLIC_MEDPLUM_CLIENT_ID!;
 const oAuth2Endpoints = {
   authorizationEndpoint: "https://api.medplum.com/oauth2/authorize",
   tokenEndpoint: "https://api.medplum.com/oauth2/token",
   userInfoEndpoint: "https://api.medplum.com/oauth2/userinfo",
 };
 
-const baseFHIRUrl = "https://api.medplum.com/fhir/R4";
-
 async function handleLogin(
+  medplum: MedplumClient,
   loginRequest: AuthRequest,
   loginResponse: AuthSessionResult,
-): Promise<TokenResponse> {
+): Promise<Patient> {
   if (loginResponse.type !== "success") {
     throw new Error("Authentication error", {
-      cause: "Unexpected response type != success",
+      cause: "unexpected response type != success",
     });
   }
 
   try {
-    return await exchangeCodeAsync(
+    const tokenResponse = await exchangeCodeAsync(
       {
         clientId: oauth2ClientId,
         code: loginResponse.params.code,
         redirectUri: loginRequest.redirectUri,
         extraParams: {
-          code_verifier: loginRequest.codeVerifier ?? "",
+          code_verifier: loginRequest.codeVerifier!,
         },
       },
       oAuth2Endpoints,
     );
+    medplum.clearActiveLogin();
+    await medplum.setActiveLogin({
+      accessToken: tokenResponse.accessToken,
+      refreshToken: tokenResponse.refreshToken,
+      // ignore missing project and profile attributes, they are set by setActiveLogin
+    } as LoginState);
+    const profile = medplum.getProfile()!;
+
+    if (!profile) {
+      throw new Error("Authentication error", {
+        cause: "missing profile",
+      });
+    }
+    if (profile.resourceType !== "Patient") {
+      throw new Error("Authentication error", {
+        cause: `unexpected login on resourceType == ${profile.resourceType}`,
+      });
+    }
+
+    return profile as Patient;
   } catch (error) {
-    throw new Error("Authentication error on exchangeCodeAsync", {
+    throw new Error("Authentication error", {
       cause: error,
     });
   }
 }
 
-async function fhirFetch(
-  url: string,
-  authTokens: TokenResponse,
-  init?: Parameters<typeof fetch>[1],
-) {
-  const response = await fetch(`${baseFHIRUrl}/${url}`, {
-    ...init,
-    headers: {
-      Authorization: `${authTokens?.tokenType} ${authTokens?.accessToken}`,
-      Accept: "application/fhir+json",
-      "Content-Type": "application/fhir+json",
-      ...init?.headers,
-    },
-  });
-  if (!response.ok) {
-    throw new Error(await response.json());
-  }
-  return await response.json();
-}
-
-async function fetchLoggedPatient(authTokens: TokenResponse): Promise<Patient> {
-  const userInfoResponse = await fetch(oAuth2Endpoints.userInfoEndpoint, {
-    headers: {
-      Authorization: `${authTokens?.tokenType} ${authTokens?.accessToken}`,
-      "Content-Type": "application/json",
-    },
-  });
-  const userInfo = await userInfoResponse.json();
-  const patient = await fhirFetch(`Patient/${userInfo.sub}`, authTokens);
-  return patient;
-}
-
 export default function Index() {
-  const [authTokens, setAuthTokens] = useState<TokenResponse>();
   const [loginRequest, loginResponse, promptLoginAsync] = useAuthRequest(
     {
       clientId: oauth2ClientId,
@@ -102,6 +91,7 @@ export default function Index() {
     oAuth2Endpoints,
   );
   const [loading, setLoading] = useState(false);
+  const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient>();
 
   // Handle login response:
@@ -117,21 +107,14 @@ export default function Index() {
     }
     if (loginResponse.type === "success") {
       setLoading(true);
-      handleLogin(loginRequest, loginResponse)
-        .then(setAuthTokens)
-        .finally(() => setLoading(false));
-    }
-  }, [loginRequest, loginResponse]);
-
-  // After login, fetch patient:
-  useEffect(() => {
-    if (authTokens) {
-      setLoading(true);
-      fetchLoggedPatient(authTokens)
+      handleLogin(medplum, loginRequest, loginResponse)
         .then(setPatient)
+        .catch((error) => {
+          Alert.alert("Authentication error", error.message);
+        })
         .finally(() => setLoading(false));
     }
-  }, [authTokens]);
+  }, [loginRequest, loginResponse, medplum]);
 
   return (
     <View
