@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Button, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Button, View } from "react-native";
 import { LoginState, MedplumClient } from "@medplum/core";
 import {
   makeRedirectUri,
@@ -7,13 +7,11 @@ import {
   exchangeCodeAsync,
   AuthSessionResult,
   AuthRequest,
-  ResponseError,
-  TokenError,
 } from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
-import { fetch } from "expo/fetch";
 import { Patient } from "@medplum/fhirtypes";
 import { useMedplum } from "@medplum/react-hooks";
+import { useRouter } from "expo-router";
 
 // Based on https://docs.expo.dev/guides/authentication/#calendly
 WebBrowser.maybeCompleteAuthSession();
@@ -29,7 +27,7 @@ async function handleLogin(
   medplum: MedplumClient,
   loginRequest: AuthRequest,
   loginResponse: AuthSessionResult,
-): Promise<Patient> {
+): Promise<void> {
   if (loginResponse.type !== "success") {
     throw new Error("Authentication error", {
       cause: "unexpected response type != success",
@@ -54,20 +52,6 @@ async function handleLogin(
       refreshToken: tokenResponse.refreshToken,
       // ignore missing project and profile attributes, they are set by setActiveLogin
     } as LoginState);
-    const profile = medplum.getProfile()!;
-
-    if (!profile) {
-      throw new Error("Authentication error", {
-        cause: "missing profile",
-      });
-    }
-    if (profile.resourceType !== "Patient") {
-      throw new Error("Authentication error", {
-        cause: `unexpected login on resourceType == ${profile.resourceType}`,
-      });
-    }
-
-    return profile as Patient;
   } catch (error) {
     throw new Error("Authentication error", {
       cause: error,
@@ -75,7 +59,8 @@ async function handleLogin(
   }
 }
 
-export default function Index() {
+export default function SignIn() {
+  const router = useRouter();
   const [loginRequest, loginResponse, promptLoginAsync] = useAuthRequest(
     {
       clientId: oauth2ClientId,
@@ -92,7 +77,6 @@ export default function Index() {
   );
   const [loading, setLoading] = useState(false);
   const medplum = useMedplum();
-  const [patient, setPatient] = useState<Patient>();
 
   // Handle login response:
   useEffect(() => {
@@ -108,13 +92,15 @@ export default function Index() {
     if (loginResponse.type === "success") {
       setLoading(true);
       handleLogin(medplum, loginRequest, loginResponse)
-        .then(setPatient)
+        .then(() => {
+          router.replace("/");
+        })
         .catch((error) => {
           Alert.alert("Authentication error", error.message);
         })
         .finally(() => setLoading(false));
     }
-  }, [loginRequest, loginResponse, medplum]);
+  }, [loginRequest, loginResponse, medplum, router]);
 
   return (
     <View
@@ -125,12 +111,7 @@ export default function Index() {
       }}
     >
       {loading && <ActivityIndicator />}
-      {!loading && patient && (
-        <Text>
-          Hello {patient.name?.[0]?.given?.[0]} {patient.name?.[0]?.family}
-        </Text>
-      )}
-      {!loading && !patient && (
+      {!loading && (
         <Button
           title="Connect to Medplum"
           disabled={!loginRequest}
