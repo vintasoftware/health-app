@@ -1,4 +1,4 @@
-import { Slot, useRouter } from "expo-router";
+import { Slot, Stack, useRouter } from "expo-router";
 import { MedplumProvider } from "@medplum/react-hooks";
 import { initMedplumClient } from "@/utils/medplum";
 import { useMemo } from "react";
@@ -10,7 +10,7 @@ export default function RootLayout() {
       initMedplumClient({
         onUnauthenticated: () => {
           medplum.clear();
-          router.navigate("/sign-in");
+          router.replace("/sign-in");
         },
       }),
     [router],
@@ -18,7 +18,11 @@ export default function RootLayout() {
 
   return (
     <MedplumProvider medplum={medplum}>
-      <Slot />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
     </MedplumProvider>
   );
 }

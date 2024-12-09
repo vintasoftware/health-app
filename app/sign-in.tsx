@@ -93,10 +93,17 @@ export default function SignIn() {
       setLoading(true);
       handleLogin(medplum, loginRequest, loginResponse)
         .then(() => {
+          // Workaround for disabling back button after login:
+          if (router.canDismiss()) {
+            router.dismissAll();
+          }
           router.replace("/");
         })
         .catch((error) => {
           Alert.alert("Authentication error", error.message);
+          if (__DEV__) {
+            console.error(error.cause);
+          }
         })
         .finally(() => setLoading(false));
     }

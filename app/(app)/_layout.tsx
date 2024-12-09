@@ -1,19 +1,15 @@
-import { Stack } from "expo-router";
-
-export const unstable_settings = {
-  initialRouteName: "(root)",
-};
+import { Text } from "react-native";
+import { Redirect, Slot } from "expo-router";
+import { useMedplum } from "@medplum/react-hooks";
 
 export default function AppLayout() {
-  return (
-    <Stack>
-      <Stack.Screen name="(root)" />
-      <Stack.Screen
-        name="sign-in"
-        options={{
-          presentation: "modal",
-        }}
-      />
-    </Stack>
-  );
+  const medplum = useMedplum();
+
+  if (!medplum || medplum.isLoading()) {
+    return <Text>Loading...</Text>;
+  }
+  if (!medplum.getActiveLogin()) {
+    return <Redirect href="/sign-in" withAnchor={true} />;
+  }
+  return <Slot />;
 }
