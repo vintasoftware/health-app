@@ -1,8 +1,6 @@
 import { ActivityIndicator, SafeAreaView, StyleSheet } from "react-native";
-import { ChatHeader } from "@/components/ChatHeader";
-import { ChatMessageList } from "@/components/ChatMessageList";
-import { ChatMessageInput } from "@/components/ChatMessageInput";
-import { useChatMessages } from "@/hooks/headless/useChatMessages";
+import { useThreads } from "@/hooks/headless/useThreads";
+import { ThreadList } from "@/components/ThreadList";
 
 const styles = StyleSheet.create({
   container: {
@@ -11,15 +9,13 @@ const styles = StyleSheet.create({
 });
 
 export default function Index() {
-  const { message, setMessage, messages, loading, sendMessage, patient } = useChatMessages();
+  const { threads, loading } = useThreads();
 
-  if (!patient) return <ActivityIndicator />;
+  if (loading) return <ActivityIndicator />;
 
   return (
     <SafeAreaView style={styles.container}>
-      <ChatHeader />
-      <ChatMessageList messages={messages} loading={loading} />
-      <ChatMessageInput message={message} setMessage={setMessage} onSend={sendMessage} />
+      <ThreadList threads={threads} />
     </SafeAreaView>
   );
 }

@@ -1,13 +1,9 @@
+import type { ChatMessage } from "@/types/chat";
 import { View, StyleSheet } from "react-native";
 import { Surface, Text, useTheme } from "react-native-paper";
 
-interface ChatMessageProps {
-  message: {
-    id: number;
-    text: string;
-    sender: string;
-    timestamp: string;
-  };
+interface ChatMessageBubbleProps {
+  message: ChatMessage;
 }
 
 const styles = StyleSheet.create({
@@ -24,7 +20,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export function ChatMessage({ message: msg }: ChatMessageProps) {
+export function ChatMessageBubble({ message: msg }: ChatMessageBubbleProps) {
   const theme = useTheme();
 
   return (

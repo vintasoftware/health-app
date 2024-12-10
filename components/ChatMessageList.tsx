@@ -1,6 +1,6 @@
 import { StyleSheet } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
-import { ChatMessage } from "./ChatMessage";
+import { ChatMessageBubble } from "./ChatMessageBubble";
 import Animated, {
   useAnimatedStyle,
   withRepeat,
@@ -10,14 +10,10 @@ import Animated, {
   withDelay,
 } from "react-native-reanimated";
 import { useEffect } from "react";
+import type { ChatMessage } from "@/types/chat";
 
 interface ChatMessageListProps {
-  messages: {
-    id: number;
-    text: string;
-    sender: string;
-    timestamp: string;
-  }[];
+  messages: ChatMessage[];
   loading: boolean;
 }
 
@@ -83,7 +79,7 @@ export function ChatMessageList({ messages, loading }: ChatMessageListProps) {
       contentContainerStyle={styles.messagesContentContainer}
     >
       {messages.map((message) => (
-        <ChatMessage key={message.id} message={message} />
+        <ChatMessageBubble key={message.id} message={message} />
       ))}
       {loading && <LoadingDots />}
     </ScrollView>
