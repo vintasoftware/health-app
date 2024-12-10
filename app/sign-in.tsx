@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Button, View } from "react-native";
+import { Alert, Button } from "react-native";
 import { LoginState, MedplumClient } from "@medplum/core";
 import {
   makeRedirectUri,
@@ -9,10 +9,10 @@ import {
   AuthRequest,
 } from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
-import { Patient } from "@medplum/fhirtypes";
 import { useMedplum } from "@medplum/react-hooks";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator } from "react-native-paper";
 
 // Based on https://docs.expo.dev/guides/authentication/#calendly
 WebBrowser.maybeCompleteAuthSession();
@@ -120,7 +120,7 @@ export default function SignIn() {
         alignItems: "center",
       }}
     >
-      {loading && <ActivityIndicator />}
+      {loading && <ActivityIndicator size="large" />}
       {!loading && (
         <Button
           title="Connect to Medplum"

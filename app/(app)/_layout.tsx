@@ -1,7 +1,7 @@
-import { ActivityIndicator, View } from "react-native";
 import { Redirect, Slot } from "expo-router";
 import { useMedplum } from "@medplum/react-hooks";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator } from "react-native-paper";
 
 export default function AppLayout() {
   const medplum = useMedplum();

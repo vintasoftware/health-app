@@ -1,6 +1,7 @@
-import { ActivityIndicator, SafeAreaView, StyleSheet } from "react-native";
+import { SafeAreaView, StyleSheet } from "react-native";
 import { useThreads } from "@/hooks/headless/useThreads";
 import { ThreadList } from "@/components/ThreadList";
+import { ActivityIndicator } from "react-native-paper";
 
 const styles = StyleSheet.create({
   container: {
@@ -11,7 +12,19 @@ const styles = StyleSheet.create({
 export default function Index() {
   const { threads, loading } = useThreads();
 
-  if (loading) return <ActivityIndicator />;
+  if (loading) {
+    return (
+      <SafeAreaView
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator size="large" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
