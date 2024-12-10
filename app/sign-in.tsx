@@ -12,6 +12,7 @@ import * as WebBrowser from "expo-web-browser";
 import { Patient } from "@medplum/fhirtypes";
 import { useMedplum } from "@medplum/react-hooks";
 import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Based on https://docs.expo.dev/guides/authentication/#calendly
 WebBrowser.maybeCompleteAuthSession();
@@ -110,7 +111,7 @@ export default function SignIn() {
   }, [loginRequest, loginResponse, medplum, router]);
 
   return (
-    <View
+    <SafeAreaView
       style={{
         flex: 1,
         justifyContent: "center",
@@ -128,6 +129,6 @@ export default function SignIn() {
           }}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
