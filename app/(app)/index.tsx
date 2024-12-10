@@ -13,12 +13,12 @@ const styles = StyleSheet.create({
 export default function Index() {
   const { message, setMessage, messages, loading, sendMessage, patient } = useChatMessages();
 
-  if (!patient || loading) return <ActivityIndicator />;
+  if (!patient) return <ActivityIndicator />;
 
   return (
     <SafeAreaView style={styles.container}>
       <ChatHeader />
-      <ChatMessageList messages={messages} />
+      <ChatMessageList messages={messages} loading={loading} />
       <ChatMessageInput message={message} setMessage={setMessage} onSend={sendMessage} />
     </SafeAreaView>
   );
