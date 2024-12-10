@@ -18,7 +18,7 @@ export function ChatHeader() {
     <Surface style={styles.header}>
       <Avatar.Icon size={40} icon="doctor" />
       <View style={styles.headerText}>
-        <Text variant="titleMedium">Dr. Smith</Text>
+        <Text variant="titleMedium">Sample Practice</Text>
         <Text variant="bodySmall">Online</Text>
       </View>
     </Surface>

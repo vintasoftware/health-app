@@ -89,8 +89,10 @@ export default function SignIn() {
         "Authentication error",
         loginResponse.params.error_description || "something went wrong",
       );
-    }
-    if (loginResponse.type === "success") {
+      if (__DEV__) {
+        console.error(JSON.stringify(loginResponse));
+      }
+    } else if (loginResponse.type === "success") {
       setLoading(true);
       handleLogin(medplum, loginRequest, loginResponse)
         .then(() => {
