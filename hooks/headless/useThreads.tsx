@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useMedplum } from "@medplum/react-hooks";
-import { Communication } from "@medplum/fhirtypes";
 import { formatTimestamp } from "./useChatMessages";
 import type { Thread } from "@/types/chat";
 
@@ -12,20 +11,33 @@ export function useThreads() {
   useEffect(() => {
     const fetchThreads = async () => {
       try {
-        // Find Communications that are NOT thread headers (don't have topics)
-        const threadHeaders = await medplum.search("Communication", {
+        // Find Communications that are NOT thread headers (don't have topics).
+        // Use _revinclude to get the thread messages to get the last message:
+        const searchResults = await medplum.search("Communication", {
           "topic:missing": false,
           _sort: "-sent",
+          _revinclude: "Communication:part-of",
         });
+        const threadComms = searchResults.entry
+          ?.filter((e) => e.search?.mode === "match")
+          .map((e) => e.resource!);
+        const lastMessage = searchResults.entry
+          ?.filter((e) => e.search?.mode === "include")
+          .sort((e1, e2) =>
+            e1.resource?.sent && e2.resource?.sent
+              ? new Date(e1.resource.sent).getTime() - new Date(e1.resource.sent).getTime()
+              : 1,
+          )?.[0]?.resource;
 
         const formattedThreads =
-          threadHeaders.entry?.map((entry) => {
-            const comm = entry.resource as Communication;
+          threadComms?.map((comm) => {
             return {
               id: comm.id!,
-              topic: comm.topic?.text || "",
-              lastMessage: comm.payload?.[0]?.contentString,
-              lastMessageTime: comm.sent ? formatTimestamp(new Date(comm.sent)) : undefined,
+              topic: comm.payload?.[0]?.contentString || comm.id!,
+              lastMessage: lastMessage?.payload?.[0]?.contentString,
+              lastMessageTime: lastMessage?.sent
+                ? formatTimestamp(new Date(lastMessage.sent))
+                : undefined,
             };
           }) || [];
 
