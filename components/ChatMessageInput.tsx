@@ -1,5 +1,5 @@
 import { StyleSheet } from "react-native";
-import { Surface, TextInput, IconButton } from "react-native-paper";
+import { IconButton, Surface, TextInput } from "react-native-paper";
 
 interface ChatMessageInputProps {
   message: string;

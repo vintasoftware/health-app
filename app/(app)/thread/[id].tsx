@@ -1,10 +1,11 @@
-import { SafeAreaView, StyleSheet } from "react-native";
-import { ChatHeader } from "@/components/ChatHeader";
-import { ChatMessageList } from "@/components/ChatMessageList";
-import { ChatMessageInput } from "@/components/ChatMessageInput";
-import { useChatMessages } from "@/hooks/headless/useChatMessages";
 import { useLocalSearchParams } from "expo-router";
+import { SafeAreaView, StyleSheet } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
+
+import { ChatHeader } from "@/components/ChatHeader";
+import { ChatMessageInput } from "@/components/ChatMessageInput";
+import { ChatMessageList } from "@/components/ChatMessageList";
+import { useChatMessages } from "@/hooks/headless/useChatMessages";
 
 const styles = StyleSheet.create({
   container: {

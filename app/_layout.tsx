@@ -1,12 +1,13 @@
-import { Stack, useRouter } from "expo-router";
 import { MedplumProvider } from "@medplum/react-hooks";
-import { initMedplumClient } from "@/utils/medplum";
-import { useMemo } from "react";
-import { PaperProvider, useTheme } from "react-native-paper";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useMemo } from "react";
 import { View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { PaperProvider, useTheme } from "react-native-paper";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { initMedplumClient } from "@/utils/medplum";
 
 function StatusBarSpacing() {
   const insets = useSafeAreaInsets();

@@ -1,7 +1,8 @@
 import { SafeAreaView, StyleSheet } from "react-native";
-import { useThreads } from "@/hooks/headless/useThreads";
-import { ThreadList } from "@/components/ThreadList";
 import { ActivityIndicator } from "react-native-paper";
+
+import { ThreadList } from "@/components/ThreadList";
+import { useThreads } from "@/hooks/headless/useThreads";
 
 const styles = StyleSheet.create({
   container: {

@@ -1,16 +1,18 @@
+import { useEffect } from "react";
 import { StyleSheet } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
-import { ChatMessageBubble } from "./ChatMessageBubble";
 import Animated, {
   useAnimatedStyle,
+  useSharedValue,
+  withDelay,
   withRepeat,
   withSequence,
   withTiming,
-  useSharedValue,
-  withDelay,
 } from "react-native-reanimated";
-import { useEffect } from "react";
+
 import type { ChatMessage } from "@/types/chat";
+
+import { ChatMessageBubble } from "./ChatMessageBubble";
 
 interface ChatMessageListProps {
   messages: ChatMessage[];

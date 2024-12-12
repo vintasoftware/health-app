@@ -1,9 +1,6 @@
-import { useContext, createContext, type PropsWithChildren } from "react";
 import { ClientStorage, MedplumClient, MedplumClientOptions, stringify } from "@medplum/core";
-import { MedplumProvider } from "@medplum/react-hooks";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
-import { useRouter } from "expo-router";
 
 class ExpoMedplumClientStorage extends ClientStorage {
   clear(): void {

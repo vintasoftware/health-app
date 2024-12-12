@@ -1,5 +1,5 @@
-import { View, StyleSheet } from "react-native";
-import { Surface, Text, Avatar } from "react-native-paper";
+import { StyleSheet, View } from "react-native";
+import { Avatar, Surface, Text } from "react-native-paper";
 
 const styles = StyleSheet.create({
   header: {

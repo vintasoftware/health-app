@@ -1,18 +1,18 @@
-import { useEffect, useState } from "react";
-import { Alert, Button } from "react-native";
 import { LoginState, MedplumClient } from "@medplum/core";
+import { useMedplum } from "@medplum/react-hooks";
 import {
+  AuthRequest,
+  AuthSessionResult,
+  exchangeCodeAsync,
   makeRedirectUri,
   useAuthRequest,
-  exchangeCodeAsync,
-  AuthSessionResult,
-  AuthRequest,
 } from "expo-auth-session";
-import * as WebBrowser from "expo-web-browser";
-import { useMedplum } from "@medplum/react-hooks";
 import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import * as WebBrowser from "expo-web-browser";
+import { useEffect, useState } from "react";
+import { Alert, Button } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Based on https://docs.expo.dev/guides/authentication/#calendly
 WebBrowser.maybeCompleteAuthSession();

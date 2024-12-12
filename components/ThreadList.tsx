@@ -1,6 +1,7 @@
+import { useRouter } from "expo-router";
 import { StyleSheet } from "react-native";
 import { List, Surface, Text } from "react-native-paper";
-import { useRouter } from "expo-router";
+
 import type { Thread } from "@/types/chat";
 
 interface ThreadListProps {

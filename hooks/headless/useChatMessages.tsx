@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
-import { useMedplum } from "@medplum/react-hooks";
 import { Communication, Patient } from "@medplum/fhirtypes";
+import { useMedplum } from "@medplum/react-hooks";
+import { useEffect, useState } from "react";
+
 import type { ChatMessage } from "@/types/chat";
 
 export function formatTimestamp(date: Date) {
@@ -28,7 +29,7 @@ export function useChatMessages(threadId: string) {
         });
 
         const formattedMessages =
-          communications.entry?.map((entry, index) => {
+          communications.entry?.map((entry) => {
             const comm = entry.resource as Communication;
             return {
               id: comm.id!,
