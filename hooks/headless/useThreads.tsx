@@ -13,10 +13,10 @@ export function useThreads() {
   useEffect(() => {
     const fetchThreads = async () => {
       try {
-        // Find Communications that are NOT thread headers (don't have topics).
+        // Find Communications that are threads (have partOf missing).
         // Use _revinclude to get the thread messages to get the last message:
         const searchResults = await medplum.search("Communication", {
-          "topic:missing": false,
+          "part-of:missing": true,
           _sort: "-sent",
           _revinclude: "Communication:part-of",
         });
