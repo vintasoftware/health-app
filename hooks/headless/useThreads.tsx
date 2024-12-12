@@ -23,10 +23,9 @@ export function useThreads() {
             const comm = entry.resource as Communication;
             return {
               id: comm.id!,
-              title: comm.payload?.[0]?.contentString!,
+              topic: comm.topic?.text || "",
               lastMessage: comm.payload?.[0]?.contentString,
               lastMessageTime: comm.sent ? formatTimestamp(new Date(comm.sent)) : undefined,
-              topic: comm.topic?.text || "",
             };
           }) || [];
 

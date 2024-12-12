@@ -26,7 +26,7 @@ export function ThreadList({ threads }: ThreadListProps) {
       {threads.map((thread) => (
         <Surface key={thread.id} style={styles.threadItem}>
           <List.Item
-            title={thread.title}
+            title={thread.topic}
             description={thread.lastMessage}
             descriptionNumberOfLines={1}
             onPress={() => router.push(`/thread/${thread.id}`)}

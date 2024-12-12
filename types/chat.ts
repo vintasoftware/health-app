@@ -1,9 +1,8 @@
 export interface Thread {
   id: string;
-  title: string;
+  topic: string;
   lastMessage?: string;
   lastMessageTime?: string;
-  topic: string;
 }
 
 export interface ChatMessage {

@@ -1,4 +1,4 @@
-import { ErrorBoundaryProps, Stack, useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { MedplumProvider } from "@medplum/react-hooks";
 import { initMedplumClient } from "@/utils/medplum";
 import { useMemo } from "react";
