@@ -1,5 +1,5 @@
 import { MedplumProvider } from "@medplum/react-hooks";
-import { Stack, useRouter } from "expo-router";
+import { ErrorBoundaryProps, Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useMemo } from "react";
 import { View } from "react-native";
@@ -13,6 +13,11 @@ function StatusBarSpacing() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   return <View style={{ height: insets.top, backgroundColor: theme.colors.background }} />;
+}
+
+export function ErrorBoundary({ error, _retry }: ErrorBoundaryProps) {
+  console.log(error);
+  return null;
 }
 
 export default function RootLayout() {
