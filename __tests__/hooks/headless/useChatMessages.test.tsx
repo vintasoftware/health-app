@@ -46,10 +46,6 @@ const mockMessage2: Communication = {
 };
 
 describe("useChatMessages", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   async function setup(): Promise<MedplumClient> {
     const medplum = new MockClient({ profile: mockPatient });
 

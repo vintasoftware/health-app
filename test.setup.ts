@@ -11,3 +11,7 @@ beforeAll(() => {
     indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
   }
 });
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
