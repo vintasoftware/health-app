@@ -38,4 +38,5 @@ yarn-error.*
 # old example app files
 app-example/
 
-app-example
+# coverage
+coverage/

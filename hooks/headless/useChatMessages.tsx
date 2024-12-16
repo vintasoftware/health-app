@@ -61,8 +61,7 @@ export function useChatMessages(threadId: string) {
       sender: {
         reference: `Patient/${patient.id}`,
         display:
-          `${patient.name?.[0]?.given?.[0]} ${patient.name?.[0]?.family}`.trim() ||
-          `Patient/${patient.id}`,
+          `${patient.name?.[0]?.given?.[0]} ${patient.name?.[0]?.family}`.trim() || "Patient",
       },
       payload: [
         {
