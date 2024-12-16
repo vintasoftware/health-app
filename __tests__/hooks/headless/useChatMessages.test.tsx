@@ -1,4 +1,4 @@
-import { createReference, MedplumClient } from "@medplum/core";
+import { createReference } from "@medplum/core";
 import { Communication, Patient } from "@medplum/fhirtypes";
 import { MockClient } from "@medplum/mock";
 import { MedplumProvider } from "@medplum/react-hooks";
@@ -46,7 +46,7 @@ const mockMessage2: Communication = {
 };
 
 describe("useChatMessages", () => {
-  async function setup(): Promise<MedplumClient> {
+  async function setup(): Promise<MockClient> {
     const medplum = new MockClient({ profile: mockPatient });
 
     // Setup mock data
@@ -55,7 +55,7 @@ describe("useChatMessages", () => {
     await medplum.createResource(mockMessage1);
     await medplum.createResource(mockMessage2);
 
-    return medplum as unknown as MedplumClient;
+    return medplum;
   }
 
   test("Loads and displays messages", async () => {
