@@ -1,4 +1,4 @@
-import { MedplumClient } from "@medplum/core";
+import { createReference, MedplumClient } from "@medplum/core";
 import { Communication, Patient } from "@medplum/fhirtypes";
 import { MockClient } from "@medplum/mock";
 import { MedplumProvider } from "@medplum/react-hooks";
@@ -10,6 +10,12 @@ const mockPatient: Patient = {
   resourceType: "Patient",
   id: "test-patient",
   name: [{ given: ["John"], family: "Doe" }],
+};
+
+const mockPractitioner: Practitioner = {
+  resourceType: "Practitioner",
+  id: "test-practitioner",
+  name: [{ given: ["Dr."], family: "Smith" }],
 };
 
 const mockThread: Communication = {
@@ -24,12 +30,9 @@ const mockMessage1: Communication = {
   id: "msg-1",
   status: "completed",
   sent: "2024-01-01T12:01:00Z",
-  sender: {
-    reference: "Patient/test-patient",
-    display: "John Doe",
-  },
+  sender: createReference(mockPatient),
   payload: [{ contentString: "Hello" }],
-  partOf: [{ reference: "Communication/test-thread" }],
+  partOf: [createReference(mockThread)],
 };
 
 const mockMessage2: Communication = {
@@ -37,12 +40,9 @@ const mockMessage2: Communication = {
   id: "msg-2",
   status: "completed",
   sent: "2024-01-01T12:02:00Z",
-  sender: {
-    reference: "Practitioner/test-doctor",
-    display: "Dr. Smith",
-  },
+  sender: createReference(mockPractitioner),
   payload: [{ contentString: "Hi there" }],
-  partOf: [{ reference: "Communication/test-thread" }],
+  partOf: [createReference(mockThread)],
 };
 
 describe("useChatMessages", () => {
