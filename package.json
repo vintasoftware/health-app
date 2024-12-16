@@ -34,6 +34,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
+    "@medplum/fhirtypes": "^3.2.25",
     "@medplum/react-hooks": "^3.2.25",
     "@react-navigation/bottom-tabs": "^7.0.0",
     "@react-navigation/native": "^7.0.0",
@@ -69,7 +70,6 @@
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.16.0",
     "@medplum/definitions": "^3.2.25",
-    "@medplum/fhirtypes": "^3.2.25",
     "@medplum/mock": "^3.2.25",
     "@testing-library/react-native": "^12.9.0",
     "@types/jest": "^29.5.12",
