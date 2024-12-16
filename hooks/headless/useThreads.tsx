@@ -2,8 +2,7 @@ import { useMedplum } from "@medplum/react-hooks";
 import { useEffect, useState } from "react";
 
 import type { Thread } from "@/types/chat";
-
-import { formatTimestamp } from "./useChatMessages";
+import { formatTimestamp } from "@/utils/datetime";
 
 export function useThreads() {
   const medplum = useMedplum();
