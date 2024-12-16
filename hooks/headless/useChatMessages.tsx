@@ -3,13 +3,7 @@ import { useMedplum } from "@medplum/react-hooks";
 import { useEffect, useState } from "react";
 
 import type { ChatMessage } from "@/types/chat";
-
-export function formatTimestamp(date: Date) {
-  return date.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import { formatTimestamp } from "@/utils/datetime";
 
 export function useChatMessages(threadId: string) {
   const medplum = useMedplum();
@@ -61,8 +55,7 @@ export function useChatMessages(threadId: string) {
       sender: {
         reference: `Patient/${patient.id}`,
         display:
-          `${patient.name?.[0]?.given?.[0]} ${patient.name?.[0]?.family}`.trim() ||
-          `Patient/${patient.id}`,
+          `${patient.name?.[0]?.given?.[0]} ${patient.name?.[0]?.family}`.trim() || "Patient",
       },
       payload: [
         {
