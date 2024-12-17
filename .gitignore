@@ -40,3 +40,9 @@ app-example/
 
 # coverage
 coverage/
+
+# development-only files
+_dev/
+
+# Cursor prompt
+.cursorrules
