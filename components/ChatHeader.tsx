@@ -1,26 +1,43 @@
+import { useRouter } from "expo-router";
 import { StyleSheet, View } from "react-native";
-import { Avatar, Surface, Text } from "react-native-paper";
+import { Appbar, Avatar, Text } from "react-native-paper";
 
 const styles = StyleSheet.create({
-  header: {
-    padding: 16,
+  headerContent: {
     flexDirection: "row",
     alignItems: "center",
-    elevation: 4,
+    gap: 12,
   },
   headerText: {
-    marginLeft: 12,
+    flexDirection: "column",
   },
 });
 
 export function ChatHeader() {
+  const router = useRouter();
+
   return (
-    <Surface style={styles.header}>
-      <Avatar.Icon size={40} icon="doctor" />
-      <View style={styles.headerText}>
-        <Text variant="titleMedium">Sample Practice</Text>
-        <Text variant="bodySmall">Online</Text>
-      </View>
-    </Surface>
+    <Appbar.Header>
+      <Appbar.BackAction
+        onPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace("/");
+          }
+        }}
+      />
+      <Appbar.Content
+        title={
+          <View style={styles.headerContent}>
+            <Avatar.Icon size={40} icon="doctor" />
+            <View style={styles.headerText}>
+              <Text variant="titleMedium">Sample Practice</Text>
+              <Text variant="bodySmall">Online</Text>
+            </View>
+          </View>
+        }
+      />
+    </Appbar.Header>
   );
 }

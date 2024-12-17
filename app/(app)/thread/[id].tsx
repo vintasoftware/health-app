@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
-import { SafeAreaView, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ChatHeader } from "@/components/ChatHeader";
 import { ChatMessageInput } from "@/components/ChatMessageInput";
@@ -32,7 +33,7 @@ export default function ThreadPage() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
       <ChatHeader />
       <ChatMessageList messages={messages} loading={loading} />
       <ChatMessageInput message={message} setMessage={setMessage} onSend={sendMessage} />
