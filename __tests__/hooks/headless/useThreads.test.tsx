@@ -73,30 +73,20 @@ describe("useThreads", () => {
       type: "searchset",
       entry: [
         {
-          fullUrl: `https://api.medplum.com/fhir/R4/Communication/${mockThread1.id}`,
           search: { mode: "match" },
           resource: mockThread1,
         },
         {
-          fullUrl: `https://api.medplum.com/fhir/R4/Communication/${mockMessage1.id}`,
           search: { mode: "include" },
           resource: mockMessage1,
         },
         {
-          fullUrl: `https://api.medplum.com/fhir/R4/Communication/${mockMessage1.id}`,
           search: { mode: "include" },
           resource: mockMessage2,
         },
         {
-          fullUrl: `https://api.medplum.com/fhir/R4/Communication/${mockThread2.id}`,
           search: { mode: "match" },
           resource: mockThread2,
-        },
-      ],
-      link: [
-        {
-          relation: "self",
-          url: "https://api.medplum.com/fhir/R4/Communication?_count=100&_revinclude=Communication:part-of&_sort=-sent&part-of:missing=true",
         },
       ],
     });
