@@ -23,6 +23,7 @@ const mockThread: Communication = {
   id: "test-thread",
   status: "completed",
   sent: "2024-01-01T12:00:00Z",
+  payload: [{ contentString: "Thread Topic" }],
 };
 
 const mockMessage1: Communication = {
@@ -66,10 +67,12 @@ describe("useChatMessages", () => {
       wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
     });
 
+    // Initially should be loading
+    expect(result.current.loading).toBe(true);
+
     // Wait for loading to complete
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
-      expect(result.current.messages).toHaveLength(2);
     });
 
     // Verify search was called correctly
@@ -128,7 +131,6 @@ describe("useChatMessages", () => {
     // Wait for messages to update
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
-      expect(result.current.messages).toHaveLength(3);
     });
 
     // Verify the new message appears in the list

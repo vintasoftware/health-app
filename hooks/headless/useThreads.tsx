@@ -6,6 +6,7 @@ import { formatTimestamp } from "@/utils/datetime";
 
 export function useThreads() {
   const medplum = useMedplum();
+  const patient = medplum.getProfile() as Patient;
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,22 +17,27 @@ export function useThreads() {
         // Use _revinclude to get the thread messages to get the last message:
         const searchResults = await medplum.search("Communication", {
           "part-of:missing": true,
-          _sort: "-sent",
           _revinclude: "Communication:part-of",
+          _sort: "-sent",
+          _count: "100",
         });
+
         const threadComms = searchResults.entry
           ?.filter((e) => e.search?.mode === "match")
           .map((e) => e.resource!);
-        const lastMessage = searchResults.entry
-          ?.filter((e) => e.search?.mode === "include")
-          .sort((e1, e2) =>
-            e1.resource?.sent && e2.resource?.sent
-              ? new Date(e1.resource.sent).getTime() - new Date(e1.resource.sent).getTime()
-              : 1,
-          )?.[0]?.resource;
-
         const formattedThreads =
           threadComms?.map((comm) => {
+            const lastMessage = searchResults.entry
+              ?.filter(
+                (e) =>
+                  e.search?.mode === "include" &&
+                  e.resource?.partOf?.[0]?.reference === `Communication/${comm.id}`,
+              )
+              .sort((e1, e2) =>
+                e1.resource?.sent && e2.resource?.sent
+                  ? new Date(e2.resource.sent).getTime() - new Date(e1.resource.sent).getTime()
+                  : 1,
+              )?.[0]?.resource;
             return {
               id: comm.id!,
               topic: comm.payload?.[0]?.contentString || comm.id!,
@@ -48,8 +54,10 @@ export function useThreads() {
       }
     };
 
-    fetchThreads();
-  }, [medplum]);
+    if (patient) {
+      fetchThreads();
+    }
+  }, [medplum, patient]);
 
   return { threads, loading };
 }
