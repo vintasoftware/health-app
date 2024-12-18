@@ -10,8 +10,10 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { PaperProvider } from "react-native-paper";
+import { MD3LightTheme, PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+
+import { oauth2ClientId } from "@/utils/medplum-oauth2";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,7 +28,7 @@ export function ErrorBoundary({ error, _retry }: ErrorBoundaryProps) {
 
 polyfillMedplumWebAPIs();
 const medplum = new MedplumClient({
-  clientId: process.env.EXPO_PUBLIC_MEDPLUM_CLIENT_ID,
+  clientId: oauth2ClientId,
   storage: new ExpoClientStorage(),
   onUnauthenticated: () => {
     medplum.clear();
@@ -43,7 +45,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar translucent={true} />
-      <PaperProvider>
+      <PaperProvider theme={MD3LightTheme}>
         <MedplumProvider medplum={medplum}>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <Stack

@@ -14,15 +14,10 @@ import { Alert, Button } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { oauth2ClientId, oAuth2Discovery } from "@/utils/medplum-oauth2";
+
 // Based on https://docs.expo.dev/guides/authentication/#calendly
 WebBrowser.maybeCompleteAuthSession();
-
-const oauth2ClientId = process.env.EXPO_PUBLIC_MEDPLUM_CLIENT_ID!;
-const oAuth2Discovery = {
-  authorizationEndpoint: "https://api.medplum.com/oauth2/authorize",
-  tokenEndpoint: "https://api.medplum.com/oauth2/token",
-  userInfoEndpoint: "https://api.medplum.com/oauth2/userinfo",
-};
 
 export default function SignIn() {
   const router = useRouter();
