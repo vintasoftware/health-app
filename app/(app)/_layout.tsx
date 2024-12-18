@@ -1,12 +1,12 @@
-import { useMedplum } from "@medplum/react-hooks";
+import { useMedplumContext } from "@medplum/react-hooks";
 import { Redirect, Slot } from "expo-router";
 import { ActivityIndicator } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AppLayout() {
-  const medplum = useMedplum();
+  const { medplum, loading } = useMedplumContext();
 
-  if (!medplum || medplum.isLoading()) {
+  if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />

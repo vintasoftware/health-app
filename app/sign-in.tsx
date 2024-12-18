@@ -1,5 +1,5 @@
 import { LoginState } from "@medplum/core";
-import { useMedplum } from "@medplum/react-hooks";
+import { useMedplumContext } from "@medplum/react-hooks";
 import {
   AuthRequest,
   exchangeCodeAsync,
@@ -8,12 +8,15 @@ import {
   TokenResponse,
 } from "expo-auth-session";
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { useCallback, useState } from "react";
 import { Alert, Button } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // Based on https://docs.expo.dev/guides/authentication/#calendly
+WebBrowser.maybeCompleteAuthSession();
+
 const oauth2ClientId = process.env.EXPO_PUBLIC_MEDPLUM_CLIENT_ID!;
 const oAuth2Discovery = {
   authorizationEndpoint: "https://api.medplum.com/oauth2/authorize",
@@ -23,8 +26,9 @@ const oAuth2Discovery = {
 
 export default function SignIn() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const medplum = useMedplum();
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
+  const { medplum, loading: isMedplumLoading } = useMedplumContext();
+  const isLoading = isLoginLoading || isMedplumLoading;
 
   const redirectAfterLogin = useCallback(() => {
     // Workaround for disabling back button after login:
@@ -115,8 +119,8 @@ export default function SignIn() {
   }, [processTokenResponse]);
 
   const handleLogin = useCallback(() => {
-    setLoading(true);
-    medplumLogin().finally(() => setLoading(false));
+    setIsLoginLoading(true);
+    medplumLogin().finally(() => setTimeout(() => setIsLoginLoading(false), 0));
   }, [medplumLogin]);
 
   return (
@@ -127,8 +131,8 @@ export default function SignIn() {
         alignItems: "center",
       }}
     >
-      {loading && <ActivityIndicator size="large" />}
-      {!loading && <Button title="Connect to Medplum" onPress={handleLogin} />}
+      {isLoading && <ActivityIndicator size="large" />}
+      {!isLoading && <Button title="Connect to Medplum" onPress={handleLogin} />}
     </SafeAreaView>
   );
 }
