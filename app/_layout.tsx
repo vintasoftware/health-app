@@ -6,10 +6,18 @@ import {
 } from "@medplum/expo-polyfills";
 import { MedplumProvider } from "@medplum/react-hooks";
 import { ErrorBoundaryProps, router, Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+
+SplashScreen.preventAutoHideAsync();
+
+export const unstable_settings = {
+  initialRouteName: "(app)/index",
+};
 
 export function ErrorBoundary({ error, _retry }: ErrorBoundaryProps) {
   console.log(error);
@@ -28,6 +36,10 @@ const medplum = new MedplumClient({
 initWebSocketManager(medplum);
 
 export default function RootLayout() {
+  useEffect(() => {
+    // Prevents flickering:
+    requestAnimationFrame(SplashScreen.hideAsync);
+  }, []);
   return (
     <SafeAreaProvider>
       <StatusBar translucent={true} />
@@ -37,6 +49,8 @@ export default function RootLayout() {
             <Stack
               screenOptions={{
                 headerShown: false,
+                // Prevents flickering:
+                animation: "none",
               }}
             />
           </GestureHandlerRootView>

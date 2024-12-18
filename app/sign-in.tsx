@@ -120,7 +120,7 @@ export default function SignIn() {
 
   const handleLogin = useCallback(() => {
     setIsLoginLoading(true);
-    medplumLogin().finally(() => setTimeout(() => setIsLoginLoading(false), 0));
+    medplumLogin().finally(() => setIsLoginLoading(false));
   }, [medplumLogin]);
 
   return (
