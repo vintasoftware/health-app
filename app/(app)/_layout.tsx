@@ -14,7 +14,8 @@ export default function AppLayout() {
     );
   }
   if (!medplum.getActiveLogin()) {
-    return <Redirect href="/sign-in" withAnchor={true} />;
+    return <Redirect href="/sign-in" />;
   }
+
   return <Slot />;
 }
