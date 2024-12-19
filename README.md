@@ -1,50 +1,107 @@
-# Welcome to your Expo app 👋
+# [⚠️ UNDER CONSTRUCTION] Health Chat App 🩺
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A sample healthcare mobile application built with Expo and React Native, using [Medplum](https://www.medplum.com/) as the backend EHR system. This app demonstrates how to build FHIR-native mobile applications for healthcare.
 
-## Get started
+## Features
 
-1. Install dependencies
+### OAuth2 Authentication with Medplum
 
-   ```bash
-   npm install
-   ```
+The app uses OAuth2 to authenticate users with a Medplum instance.
 
-2. Start the app
+### Secure Chat System
+The app implements a secure chat system following Medplum's ["Organizing Communications Using Threads"](https://www.medplum.com/docs/communications/organizing-communications) architecture. This allows patients to:
 
-   ```bash
-    npx expo start
-   ```
+- View all their chat threads with healthcare providers
+- Send and receive messages in real-time
+- Access chat history securely
 
-In the output, you'll find options to open the app in a
+The chat system is built using FHIR `Communication` resources, ensuring healthcare compliance and data interoperability.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Getting Started
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Prerequisites
+- [Expo](https://docs.expo.dev/)
+- npm or yarn
+- iOS Simulator (for iOS) or Android Emulator (for Android)
 
-## Get a fresh project
+### Installation
 
-When you're ready, run:
+1. Install dependencies:
+
+    ```bash
+    npm install
+    ```
+
+### Configuring Medplum OAuth2
+
+1. Create two Medplum Client Applications and get their client IDs:
+
+    1. As a Medplum admin, go to Medplum App's [Client Applications](https://app.medplum.com/ClientApplication) page
+    2. Create two new client applications, one for web and one for native.
+    3. Set the Redirect URI to `http://localhost:8081` for the web client and something like `exp://192.168.???.???:8081` for the native client.
+        - Run `npm start` and check the "Metro waiting on" message in the terminal to get the IP address to use in the Redirect URI.
+    4. Copy the client ID for both applications.
+
+2. Copy the `.env.local.example` file to `.env.local`
+
+    ```bash
+    cp .env.local.example .env.local
+    ```
+
+3. Fill in the values in the `.env.local` file:
+
+    ```bash
+    EXPO_PUBLIC_MEDPLUM_WEB_CLIENT_ID=your_web_client_id
+    EXPO_PUBLIC_MEDPLUM_NATIVE_CLIENT_ID=your_native_client_id
+    ```
+
+### Running the App
+
+Start the development server:
 
 ```bash
-npm run reset-project
+npm start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+This will open the Expo CLI where you can choose to run the app on:
+- iOS Simulator
+- Android Emulator
+- Web browser
+- Physical device using Expo Go
 
-## Learn more
+### Testing
 
-To learn more about developing your project with Expo, look at the following resources:
+Run the test suite:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm test
+```
 
-## Join the community
+The project uses Jest and React Native Testing Library for testing. Test files are located in the `__tests__` directory.
 
-Join our community of developers creating universal apps.
+### Development Setup
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The project uses ESLint, Prettier, and Husky for code quality and consistency. Install Husky pre-commit hooks:
+
+```bash
+npm run prepare
+```
+
+## Project Structure
+
+- `/app` - Main application code using Expo Router for file-based routing
+- `/components` - Reusable React components
+- `/hooks` - Custom React hooks for business logic
+- `/types` - TypeScript type definitions
+- `/utils` - Utility functions
+- `/__tests__` - Test files
+
+## License
+
+This project is licensed under the MIT License - see the `LICENSE.txt` file for details.
+
+## Commercial Support
+
+[![alt text](https://avatars2.githubusercontent.com/u/5529080?s=80&v=4 "Vinta Logo")](https://www.vintasoftware.com/)
+
+This is an open-source project maintained by [Vinta Software](https://www.vinta.com.br/). We are always looking for exciting work! If you need any commercial support, feel free to get in touch: contact@vinta.com.br
