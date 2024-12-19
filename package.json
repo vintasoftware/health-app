@@ -34,6 +34,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
+    "@medplum/expo-polyfills": "^3.2.25",
     "@medplum/fhirtypes": "^3.2.25",
     "@medplum/react-hooks": "^3.2.25",
     "@react-navigation/bottom-tabs": "^7.0.0",
