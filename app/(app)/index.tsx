@@ -1,6 +1,8 @@
-import { SafeAreaView, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ThreadHeader } from "@/components/ThreadHeader";
 import { ThreadList } from "@/components/ThreadList";
 import { useThreads } from "@/hooks/headless/useThreads";
 
@@ -28,7 +30,8 @@ export default function Index() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
+      <ThreadHeader />
       <ThreadList threads={threads} />
     </SafeAreaView>
   );
