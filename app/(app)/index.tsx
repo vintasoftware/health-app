@@ -1,3 +1,6 @@
+import { useMedplum } from "@medplum/react-hooks";
+import { useRouter } from "expo-router";
+import { useCallback } from "react";
 import { StyleSheet } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,6 +17,13 @@ const styles = StyleSheet.create({
 
 export default function Index() {
   const { threads, loading } = useThreads();
+  const medplum = useMedplum();
+  const router = useRouter();
+
+  const handleLogout = useCallback(() => {
+    medplum.clear();
+    router.replace("/sign-in");
+  }, [medplum, router]);
 
   if (loading) {
     return (
@@ -31,7 +41,7 @@ export default function Index() {
 
   return (
     <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
-      <ThreadHeader />
+      <ThreadHeader onLogout={handleLogout} />
       <ThreadList threads={threads} />
     </SafeAreaView>
   );
