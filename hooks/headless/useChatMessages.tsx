@@ -1,4 +1,4 @@
-import { Communication, Patient } from "@medplum/fhirtypes";
+import { Communication } from "@medplum/fhirtypes";
 import { useMedplum } from "@medplum/react-hooks";
 import { useEffect, useState } from "react";
 
@@ -7,7 +7,7 @@ import { formatTimestamp } from "@/utils/datetime";
 
 export function useChatMessages(threadId: string) {
   const medplum = useMedplum();
-  const patient = medplum.getProfile() as Patient;
+  const profile = medplum.getProfile();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,9 @@ export function useChatMessages(threadId: string) {
             return {
               id: comm.id!,
               text: comm.payload?.[0]?.contentString || "",
-              sender: comm.sender?.reference?.includes("Patient") ? "patient" : "doctor",
+              sender: (comm.sender?.reference?.includes("Patient") ? "Patient" : "Practitioner") as
+                | "Patient"
+                | "Practitioner",
               timestamp: formatTimestamp(comm.sent ? new Date(comm.sent) : new Date()),
               threadId,
             };
@@ -40,22 +42,22 @@ export function useChatMessages(threadId: string) {
       }
     };
 
-    if (patient && threadId) {
+    if (profile && threadId) {
       fetchMessages();
     }
-  }, [medplum, patient, threadId]);
+  }, [medplum, profile, threadId]);
 
   const sendMessage = async () => {
-    if (!message.trim() || !patient) return;
+    if (!message.trim() || !profile) return;
 
     let newCommunication: Communication = {
       resourceType: "Communication",
       status: "completed",
       sent: new Date().toISOString(),
       sender: {
-        reference: `Patient/${patient.id}`,
+        reference: `Patient/${profile.id}`,
         display:
-          `${patient.name?.[0]?.given?.[0]} ${patient.name?.[0]?.family}`.trim() || "Patient",
+          `${profile.name?.[0]?.given?.[0]} ${profile.name?.[0]?.family}`.trim() || "Patient",
       },
       payload: [
         {
@@ -75,7 +77,7 @@ export function useChatMessages(threadId: string) {
       {
         id: newCommunication.id!,
         text: message,
-        sender: "patient",
+        sender: profile.resourceType as "Patient" | "Practitioner",
         timestamp: formatTimestamp(new Date()),
         threadId,
       },
@@ -89,6 +91,6 @@ export function useChatMessages(threadId: string) {
     messages,
     loading,
     sendMessage,
-    patient,
+    patient: profile,
   };
 }

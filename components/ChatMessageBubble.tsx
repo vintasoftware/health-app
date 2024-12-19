@@ -1,3 +1,4 @@
+import { useMedplumProfile } from "@medplum/react-hooks";
 import { StyleSheet, View } from "react-native";
 import { Surface, Text, useTheme } from "react-native-paper";
 
@@ -23,12 +24,13 @@ const styles = StyleSheet.create({
 
 export function ChatMessageBubble({ message: msg }: ChatMessageBubbleProps) {
   const theme = useTheme();
+  const profile = useMedplumProfile();
 
   return (
     <View
       style={[
         styles.messageWrapper,
-        { alignSelf: msg.sender === "patient" ? "flex-end" : "flex-start" },
+        { alignSelf: msg.sender === profile?.resourceType ? "flex-end" : "flex-start" },
       ]}
     >
       <Surface
@@ -36,14 +38,18 @@ export function ChatMessageBubble({ message: msg }: ChatMessageBubbleProps) {
           styles.messageBubble,
           {
             backgroundColor:
-              msg.sender === "patient" ? theme.colors.primary : theme.colors.surfaceVariant,
+              msg.sender === profile?.resourceType
+                ? theme.colors.primary
+                : theme.colors.surfaceVariant,
           },
         ]}
       >
         <Text
           style={{
             color:
-              msg.sender === "patient" ? theme.colors.onPrimary : theme.colors.onSurfaceVariant,
+              msg.sender === profile?.resourceType
+                ? theme.colors.onPrimary
+                : theme.colors.onSurfaceVariant,
           }}
         >
           {msg.text}
@@ -54,7 +60,9 @@ export function ChatMessageBubble({ message: msg }: ChatMessageBubbleProps) {
             styles.timestamp,
             {
               color:
-                msg.sender === "patient" ? theme.colors.onPrimary : theme.colors.onSurfaceVariant,
+                msg.sender === profile?.resourceType
+                  ? theme.colors.onPrimary
+                  : theme.colors.onSurfaceVariant,
             },
           ]}
         >

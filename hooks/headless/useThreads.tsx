@@ -6,7 +6,6 @@ import { formatTimestamp } from "@/utils/datetime";
 
 export function useThreads() {
   const medplum = useMedplum();
-  const patient = medplum.getProfile() as Patient;
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -54,10 +53,8 @@ export function useThreads() {
       }
     };
 
-    if (patient) {
-      fetchThreads();
-    }
-  }, [medplum, patient]);
+    fetchThreads();
+  }, [medplum]);
 
   return { threads, loading };
 }
