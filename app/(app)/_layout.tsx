@@ -1,13 +1,13 @@
-import { useMedplumContext } from "@medplum/react-hooks";
+import { useMedplum } from "@medplum/react-hooks";
 import { Redirect, Slot } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Spinner } from "@/components/ui/spinner";
 
 export default function AppLayout() {
-  const { medplum, loading } = useMedplumContext();
+  const medplum = useMedplum();
 
-  if (loading || !medplum.isInitialized) {
+  if (medplum.isLoading()) {
     return (
       <SafeAreaView
         className="bg-background-50"

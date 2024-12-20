@@ -1,5 +1,5 @@
 import { LoginState } from "@medplum/core";
-import { useMedplumContext } from "@medplum/react-hooks";
+import { useMedplum } from "@medplum/react-hooks";
 import {
   AuthRequest,
   exchangeCodeAsync,
@@ -21,9 +21,9 @@ WebBrowser.maybeCompleteAuthSession();
 
 export default function SignIn() {
   const router = useRouter();
+  const medplum = useMedplum();
   const [isLoginLoading, setIsLoginLoading] = useState(false);
-  const { medplum, loading: isMedplumLoading } = useMedplumContext();
-  const isLoading = isLoginLoading || isMedplumLoading || !medplum.isInitialized;
+  const isLoading = isLoginLoading || !medplum.isInitialized;
 
   const redirectAfterLogin = useCallback(() => {
     // Workaround for disabling back button after login:

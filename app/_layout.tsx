@@ -17,6 +17,10 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { oauth2ClientId } from "@/utils/medplum-oauth2";
 
+export const unstable_settings = {
+  initialRouteName: "/(app)",
+};
+
 SplashScreen.preventAutoHideAsync();
 
 export function ErrorBoundary({ error, _retry }: ErrorBoundaryProps) {
