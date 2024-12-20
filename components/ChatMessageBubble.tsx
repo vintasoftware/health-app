@@ -11,13 +11,13 @@ interface ChatMessageBubbleProps {
 export function ChatMessageBubble({ message: msg }: ChatMessageBubbleProps) {
   const profile = useMedplumProfile();
 
-  const isCurrentUser = msg.sender === profile?.resourceType;
+  const isCurrentUser = msg.senderType === profile?.resourceType;
   const wrapperAlignment = isCurrentUser ? "self-end" : "self-start";
   const bubbleColor = isCurrentUser ? "bg-info-500" : "bg-background-100";
   const textColor = isCurrentUser ? "text-typography-0" : "text-typography-900";
 
   return (
-    <View className={`max-w-[80%] pb-2 px-2 ${wrapperAlignment}`}>
+    <View className={`max-w-[80%] mx-2 pb-2 px-2 ${wrapperAlignment}`}>
       <View className={`p-3 rounded-xl ${bubbleColor}`}>
         <Text className={textColor}>{msg.text}</Text>
         <Text className={`text-sm opacity-70 mt-1 ${textColor}`}>{msg.timestamp}</Text>

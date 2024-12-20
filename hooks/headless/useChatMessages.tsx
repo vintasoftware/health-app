@@ -1,3 +1,4 @@
+import { createReference } from "@medplum/core";
 import { Communication } from "@medplum/fhirtypes";
 import { useMedplum } from "@medplum/react-hooks";
 import { useEffect, useState } from "react";
@@ -28,9 +29,9 @@ export function useChatMessages(threadId: string) {
             return {
               id: comm.id!,
               text: comm.payload?.[0]?.contentString || "",
-              sender: (comm.sender?.reference?.includes("Patient") ? "Patient" : "Practitioner") as
-                | "Patient"
-                | "Practitioner",
+              senderType: (comm.sender?.reference?.includes("Patient")
+                ? "Patient"
+                : "Practitioner") as "Patient" | "Practitioner",
               timestamp: formatTimestamp(comm.sent ? new Date(comm.sent) : new Date()),
               threadId,
             };
@@ -54,11 +55,7 @@ export function useChatMessages(threadId: string) {
       resourceType: "Communication",
       status: "completed",
       sent: new Date().toISOString(),
-      sender: {
-        reference: `Patient/${profile.id}`,
-        display:
-          `${profile.name?.[0]?.given?.[0]} ${profile.name?.[0]?.family}`.trim() || "Patient",
-      },
+      sender: createReference(profile),
       payload: [
         {
           contentString: message.trim(),
@@ -77,7 +74,7 @@ export function useChatMessages(threadId: string) {
       {
         id: newCommunication.id!,
         text: message,
-        sender: profile.resourceType as "Patient" | "Practitioner",
+        senderType: profile.resourceType as "Patient" | "Practitioner",
         timestamp: formatTimestamp(new Date()),
         threadId,
       },

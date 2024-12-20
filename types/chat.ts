@@ -10,7 +10,7 @@ export interface Thread {
 export interface ChatMessage {
   id: string;
   text: string;
-  sender: Patient["resourceType"] | Practitioner["resourceType"];
+  senderType: Patient["resourceType"] | Practitioner["resourceType"];
   timestamp: string;
   threadId?: string;
 }

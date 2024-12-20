@@ -85,9 +85,9 @@ describe("useChatMessages", () => {
     // Check messages are displayed
     expect(result.current.messages).toHaveLength(2);
     expect(result.current.messages[0].text).toBe("Hello");
-    expect(result.current.messages[0].sender).toBe("Patient");
+    expect(result.current.messages[0].senderType).toBe("Patient");
     expect(result.current.messages[1].text).toBe("Hi there");
-    expect(result.current.messages[1].sender).toBe("Practitioner");
+    expect(result.current.messages[1].senderType).toBe("Practitioner");
   });
 
   test("Sends new message", async () => {
@@ -135,7 +135,7 @@ describe("useChatMessages", () => {
 
     // Verify the new message appears in the list
     expect(result.current.messages[2].text).toBe("New message");
-    expect(result.current.messages[2].sender).toBe("Patient");
+    expect(result.current.messages[2].senderType).toBe("Patient");
   });
 
   test("Does not send empty message", async () => {
