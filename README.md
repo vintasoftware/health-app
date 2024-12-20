@@ -9,6 +9,7 @@ A sample healthcare mobile application built with Expo and React Native, using [
 The app uses OAuth2 to authenticate users with a Medplum instance.
 
 ### Secure Chat System
+
 The app implements a secure chat system following Medplum's ["Organizing Communications Using Threads"](https://www.medplum.com/docs/communications/organizing-communications) architecture. This allows patients to:
 
 - View all their chat threads with healthcare providers
@@ -16,6 +17,10 @@ The app implements a secure chat system following Medplum's ["Organizing Communi
 - Access chat history securely
 
 The chat system is built using FHIR `Communication` resources, ensuring healthcare compliance and data interoperability.
+
+### UI components
+
+UI components are built using [gluestack-ui v2](https://ui.gluestack.com/). All original components from the library are kept as-is under the `components/ui` directory, but additional components are added to the same directory to support the app's requirements. Domain-specific components are at `components` directory.
 
 ## Getting Started
 
