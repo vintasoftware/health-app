@@ -1,19 +1,12 @@
 import { useMedplum } from "@medplum/react-hooks";
 import { useRouter } from "expo-router";
 import { useCallback } from "react";
-import { StyleSheet } from "react-native";
-import { ActivityIndicator } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThreadHeader } from "@/components/ThreadHeader";
 import { ThreadList } from "@/components/ThreadList";
+import { Spinner } from "@/components/ui/spinner";
 import { useThreads } from "@/hooks/headless/useThreads";
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
 
 export default function Index() {
   const { threads, loading } = useThreads();
@@ -34,13 +27,13 @@ export default function Index() {
           alignItems: "center",
         }}
       >
-        <ActivityIndicator size="large" />
+        <Spinner size="large" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
+    <SafeAreaView className="bg-background-50" style={{ flex: 1 }}>
       <ThreadHeader onLogout={handleLogout} />
       <ThreadList threads={threads} />
     </SafeAreaView>

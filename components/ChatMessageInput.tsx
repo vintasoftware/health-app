@@ -1,5 +1,9 @@
-import { StyleSheet } from "react-native";
-import { IconButton, Surface, TextInput } from "react-native-paper";
+import { SendIcon } from "lucide-react-native";
+
+import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
+import { Input, InputField } from "@/components/ui/input";
+import { View } from "@/components/ui/view";
 
 interface ChatMessageInputProps {
   message: string;
@@ -7,29 +11,21 @@ interface ChatMessageInputProps {
   onSend: () => void;
 }
 
-const styles = StyleSheet.create({
-  inputContainer: {
-    padding: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  input: {
-    flex: 1,
-  },
-});
-
 export function ChatMessageInput({ message, setMessage, onSend }: ChatMessageInputProps) {
   return (
-    <Surface style={styles.inputContainer}>
-      <TextInput
-        mode="outlined"
-        placeholder="Type a message..."
-        value={message}
-        onChangeText={setMessage}
-        style={styles.input}
-      />
-      <IconButton icon="send" mode="contained" onPress={onSend} disabled={!message.trim()} />
-    </Surface>
+    <View className="flex-row items-center gap-2 p-2 bg-background-0">
+      <Input className="flex-1">
+        <InputField placeholder="Type a message..." value={message} onChangeText={setMessage} />
+      </Input>
+      <Button
+        variant="solid"
+        size="sm"
+        onPress={onSend}
+        disabled={!message.trim()}
+        className="aspect-square p-2"
+      >
+        <Icon as={SendIcon} size="sm" className="text-typography-0" />
+      </Button>
+    </View>
   );
 }
