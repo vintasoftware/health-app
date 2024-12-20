@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { ScrollView } from "react-native-gesture-handler";
 
 import type { ChatMessage } from "@/types/chat";
@@ -11,8 +12,17 @@ interface ChatMessageListProps {
 }
 
 export function ChatMessageList({ messages, loading }: ChatMessageListProps) {
+  const scrollViewRef = useRef<ScrollView>(null);
+
   return (
-    <ScrollView className="flex-1">
+    <ScrollView
+      ref={scrollViewRef}
+      className="flex-1"
+      onContentSizeChange={() => {
+        // Also scroll to bottom when content size changes (e.g. new message)
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }}
+    >
       {messages.map((message) => (
         <ChatMessageBubble key={message.id} message={message} />
       ))}
