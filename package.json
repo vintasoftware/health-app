@@ -25,6 +25,10 @@
     "collectCoverage": true,
     "collectCoverageFrom": [
       "**/*.{ts,tsx,js,jsx}",
+      "!metro.config.js",
+      "!nativewind-env.d.ts",
+      "!tailwind.config.js",
+      "!components/ui/**",
       "!**/coverage/**",
       "!**/node_modules/**",
       "!**/babel.config.js",
