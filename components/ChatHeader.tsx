@@ -12,7 +12,7 @@ export function ChatHeader() {
   return (
     <View className="flex-row items-center p-2 bg-background-50">
       <Pressable
-        className="p-2 mr-2 active:bg-gray-100"
+        className="p-2 mr-2 active:bg-gray-300"
         onPress={() => {
           if (router.canGoBack()) {
             router.back();
