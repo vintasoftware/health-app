@@ -15,7 +15,12 @@ export function ChatMessageInput({ message, setMessage, onSend }: ChatMessageInp
   return (
     <View className="flex-row items-center gap-2 p-2 bg-background-0">
       <Input className="flex-1">
-        <InputField placeholder="Type a message..." value={message} onChangeText={setMessage} />
+        <InputField
+          placeholder="Type a message..."
+          value={message}
+          onChangeText={setMessage}
+          className="py-2"
+        />
       </Input>
       <Button
         variant="solid"

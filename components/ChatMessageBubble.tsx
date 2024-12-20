@@ -17,7 +17,7 @@ export function ChatMessageBubble({ message: msg }: ChatMessageBubbleProps) {
   const textColor = isCurrentUser ? "text-typography-0" : "text-typography-900";
 
   return (
-    <View className={`max-w-[80%] ${wrapperAlignment}`}>
+    <View className={`max-w-[80%] pb-2 px-2 ${wrapperAlignment}`}>
       <View className={`p-3 rounded-xl ${bubbleColor}`}>
         <Text className={textColor}>{msg.text}</Text>
         <Text className={`text-sm opacity-70 mt-1 ${textColor}`}>{msg.timestamp}</Text>

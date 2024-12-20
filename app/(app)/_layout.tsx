@@ -7,7 +7,7 @@ import { Spinner } from "@/components/ui/spinner";
 export default function AppLayout() {
   const { medplum, loading } = useMedplumContext();
 
-  if (loading) {
+  if (loading || !medplum.isInitialized) {
     return (
       <SafeAreaView
         className="bg-background-50"

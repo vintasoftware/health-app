@@ -6,11 +6,11 @@ import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 
-interface ThreadHeaderProps {
+interface ThreadListHeaderProps {
   onLogout?: () => void;
 }
 
-export function ThreadHeader({ onLogout }: ThreadHeaderProps) {
+export function ThreadListHeader({ onLogout }: ThreadListHeaderProps) {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   return (

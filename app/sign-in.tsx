@@ -23,7 +23,7 @@ export default function SignIn() {
   const router = useRouter();
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const { medplum, loading: isMedplumLoading } = useMedplumContext();
-  const isLoading = isLoginLoading || isMedplumLoading;
+  const isLoading = isLoginLoading || isMedplumLoading || !medplum.isInitialized;
 
   const redirectAfterLogin = useCallback(() => {
     // Workaround for disabling back button after login:

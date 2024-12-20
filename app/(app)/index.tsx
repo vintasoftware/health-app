@@ -3,8 +3,8 @@ import { useRouter } from "expo-router";
 import { useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ThreadHeader } from "@/components/ThreadHeader";
 import { ThreadList } from "@/components/ThreadList";
+import { ThreadListHeader } from "@/components/ThreadListHeader";
 import { Spinner } from "@/components/ui/spinner";
 import { useThreads } from "@/hooks/headless/useThreads";
 
@@ -34,7 +34,7 @@ export default function Index() {
 
   return (
     <SafeAreaView className="bg-background-50" style={{ flex: 1 }}>
-      <ThreadHeader onLogout={handleLogout} />
+      <ThreadListHeader onLogout={handleLogout} />
       <ThreadList threads={threads} />
     </SafeAreaView>
   );

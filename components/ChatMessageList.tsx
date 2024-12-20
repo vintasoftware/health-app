@@ -12,7 +12,7 @@ interface ChatMessageListProps {
 
 export function ChatMessageList({ messages, loading }: ChatMessageListProps) {
   return (
-    <ScrollView className="flex-1 p-4" contentContainerClassName="gap-2">
+    <ScrollView className="flex-1">
       {messages.map((message) => (
         <ChatMessageBubble key={message.id} message={message} />
       ))}
