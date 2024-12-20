@@ -25,7 +25,7 @@ function ThreadItem({
 }) {
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
-      <Pressable onPress={onPress} className="bg-transparent active:bg-gray-300">
+      <Pressable onPress={onPress} className="bg-transparent active:bg-secondary-600">
         <View className="flex-row items-center p-4 gap-3">
           <Avatar size="md">
             <Text>{thread.topic.slice(0, 2).toUpperCase()}</Text>

@@ -27,7 +27,12 @@ export function ThreadListHeader({ onLogout }: ThreadListHeaderProps) {
         </Text>
 
         <View className="flex-row items-center gap-2">
-          <Button variant="outline" size="sm" onPress={() => setIsCreateModalOpen(true)}>
+          <Button
+            variant="outline"
+            action="primary"
+            size="sm"
+            onPress={() => setIsCreateModalOpen(true)}
+          >
             <ButtonIcon as={PlusIcon} size="sm" />
             <ButtonText>New Thread</ButtonText>
           </Button>
@@ -48,7 +53,7 @@ export function ThreadListHeader({ onLogout }: ThreadListHeaderProps) {
                     setIsMenuVisible(false);
                     onLogout?.();
                   }}
-                  className="flex-row items-center p-1 active:bg-gray-300"
+                  className="flex-row items-center p-1 active:bg-secondary-600"
                 >
                   <Text>Logout</Text>
                 </Pressable>
