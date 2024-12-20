@@ -1,5 +1,5 @@
 import { LoginState } from "@medplum/core";
-import { useMedplumContext } from "@medplum/react-hooks";
+import { useMedplum } from "@medplum/react-hooks";
 import {
   AuthRequest,
   exchangeCodeAsync,
@@ -11,9 +11,9 @@ import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useCallback, useState } from "react";
 import { Alert, Button } from "react-native";
-import { ActivityIndicator } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Spinner } from "@/components/ui/spinner";
 import { oauth2ClientId, oAuth2Discovery } from "@/utils/medplum-oauth2";
 
 // Based on https://docs.expo.dev/guides/authentication/#calendly
@@ -21,9 +21,9 @@ WebBrowser.maybeCompleteAuthSession();
 
 export default function SignIn() {
   const router = useRouter();
+  const medplum = useMedplum();
   const [isLoginLoading, setIsLoginLoading] = useState(false);
-  const { medplum, loading: isMedplumLoading } = useMedplumContext();
-  const isLoading = isLoginLoading || isMedplumLoading;
+  const isLoading = isLoginLoading || !medplum.isInitialized;
 
   const redirectAfterLogin = useCallback(() => {
     // Workaround for disabling back button after login:
@@ -126,7 +126,7 @@ export default function SignIn() {
         alignItems: "center",
       }}
     >
-      {isLoading && <ActivityIndicator size="large" />}
+      {isLoading && <Spinner size="large" />}
       {!isLoading && <Button title="Connect to Medplum" onPress={handleLogin} />}
     </SafeAreaView>
   );

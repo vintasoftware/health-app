@@ -1,8 +1,8 @@
 import { createReference } from "@medplum/core";
-import { Communication, Patient } from "@medplum/fhirtypes";
+import { Communication, Patient, Practitioner } from "@medplum/fhirtypes";
 import { MockClient } from "@medplum/mock";
 import { MedplumProvider } from "@medplum/react-hooks";
-import { renderHook, waitFor } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 
 import { useThreads } from "@/hooks/headless/useThreads";
 import { formatTimestamp } from "@/utils/datetime";
@@ -11,6 +11,12 @@ const mockPatient: Patient = {
   resourceType: "Patient",
   id: "test-patient",
   name: [{ given: ["John"], family: "Doe" }],
+};
+
+const mockPractitioner: Practitioner = {
+  resourceType: "Practitioner",
+  id: "test-practitioner",
+  name: [{ given: ["Dr"], family: "Smith" }],
 };
 
 const mockThread1: Communication = {
@@ -50,24 +56,25 @@ const mockThread2: Communication = {
 };
 
 describe("useThreads", () => {
-  async function setup(): Promise<MockClient> {
-    const medplum = new MockClient({ profile: mockPatient });
+  async function setup(profile: Patient | Practitioner = mockPatient): Promise<MockClient> {
+    const medplum = new MockClient({ profile });
 
     // Setup mock data
     await medplum.createResource(mockPatient);
     await medplum.createResource(mockThread1);
     await medplum.createResource(mockMessage1);
+    await medplum.createResource(mockMessage2);
     await medplum.createResource(mockThread2);
 
     return medplum;
   }
 
-  test("Loads and displays threads", async () => {
+  test("Loads and displays threads for patient", async () => {
     const medplum = await setup();
     const searchSpy = jest.spyOn(medplum, "search");
 
     // Mock the search implementation to return results with search modes
-    // (the mock client doesn't support search modes)
+    // (the default mock client doesn't support search modes)
     searchSpy.mockResolvedValue({
       resourceType: "Bundle",
       type: "searchset",
@@ -106,6 +113,7 @@ describe("useThreads", () => {
     // Verify search was called correctly
     expect(searchSpy).toHaveBeenCalledWith("Communication", {
       "part-of:missing": true,
+      subject: "Patient/test-patient",
       _revinclude: "Communication:part-of",
       _sort: "-sent",
       _count: "100",
@@ -125,15 +133,18 @@ describe("useThreads", () => {
       expect.objectContaining({
         id: "test-thread-2",
         topic: "Thread 2 Topic",
+        lastMessage: undefined,
+        lastMessageTime: undefined,
       }),
     );
   });
 
-  test("Handles no threads", async () => {
-    const medplum = new MockClient({ profile: mockPatient });
+  test("Handles no threads", async (profile: Patient | Practitioner = mockPatient) => {
+    const medplum = new MockClient({ profile });
+    const searchSpy = jest.spyOn(medplum, "search");
 
     // Mock empty search results
-    medplum.search = jest.fn().mockResolvedValue({
+    searchSpy.mockResolvedValue({
       resourceType: "Bundle",
       type: "searchset",
       entry: [],
@@ -145,18 +156,113 @@ describe("useThreads", () => {
       ],
     });
 
+    const { result } = renderHook(() => useThreads(), {
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.threads).toEqual([]);
+    expect(searchSpy).toHaveBeenCalled();
+  });
+
+  test("Loads all threads for practitioner", async () => {
+    const medplum = await setup(mockPractitioner);
     const searchSpy = jest.spyOn(medplum, "search");
 
     const { result } = renderHook(() => useThreads(), {
       wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
     });
 
-    // Wait for loading to complete
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(searchSpy).toHaveBeenCalled();
-    expect(result.current.threads).toEqual([]);
+    expect(searchSpy).toHaveBeenCalledWith("Communication", {
+      "part-of:missing": true,
+      subject: undefined,
+      _revinclude: "Communication:part-of",
+      _sort: "-sent",
+      _count: "100",
+    });
+  });
+
+  test("Creates new thread successfully", async () => {
+    const medplum = await setup();
+    const createSpy = jest.spyOn(medplum, "createResource");
+
+    const { result } = renderHook(() => useThreads(), {
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const newThreadId = await act(async () => {
+      return await result.current.createThread("New Thread Topic");
+    });
+
+    expect(createSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceType: "Communication",
+        status: "completed",
+        sender: {
+          reference: "Patient/test-patient",
+          display: "John Doe",
+        },
+        subject: {
+          reference: "Patient/test-patient",
+          display: "John Doe",
+        },
+        payload: [{ contentString: "New Thread Topic" }],
+      }),
+    );
+
+    const callArgs = createSpy.mock.calls[0][0] as Communication;
+    expect(callArgs.sent).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+
+    expect(newThreadId).toBeDefined();
+    expect(result.current.threads[0]).toEqual(
+      expect.objectContaining({
+        id: newThreadId,
+        topic: "New Thread Topic",
+      }),
+    );
+  });
+
+  test("Prevents non-patient from creating thread", async () => {
+    const medplum = await setup(mockPractitioner);
+
+    const { result } = renderHook(() => useThreads(), {
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await expect(result.current.createThread("New Thread")).rejects.toThrow(
+      "Only patients can create threads",
+    );
+  });
+
+  test("Does not create thread with empty topic", async () => {
+    const medplum = await setup();
+    const createSpy = jest.spyOn(medplum, "createResource");
+
+    const { result } = renderHook(() => useThreads(), {
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const threadId = await result.current.createThread("   ");
+    expect(threadId).toBeUndefined();
+    expect(createSpy).not.toHaveBeenCalled();
   });
 });

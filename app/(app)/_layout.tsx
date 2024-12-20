@@ -1,15 +1,19 @@
-import { useMedplumContext } from "@medplum/react-hooks";
+import { useMedplum } from "@medplum/react-hooks";
 import { Redirect, Slot } from "expo-router";
-import { ActivityIndicator } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function AppLayout() {
-  const { medplum, loading } = useMedplumContext();
+import { Spinner } from "@/components/ui/spinner";
 
-  if (loading) {
+export default function AppLayout() {
+  const medplum = useMedplum();
+
+  if (medplum.isLoading()) {
     return (
-      <SafeAreaView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" />
+      <SafeAreaView
+        className="bg-background-50"
+        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+      >
+        <Spinner size="large" />
       </SafeAreaView>
     );
   }

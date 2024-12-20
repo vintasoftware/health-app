@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { StyleSheet } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -8,22 +7,6 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flexDirection: "row",
-    gap: 4,
-    padding: 8,
-    justifyContent: "center",
-  },
-  loadingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "gray",
-    opacity: 0.5,
-  },
-});
 
 export function LoadingDots() {
   const dots = [0, 1, 2];
@@ -49,9 +32,13 @@ export function LoadingDots() {
   }, []);
 
   return (
-    <Animated.View style={styles.loadingContainer}>
+    <Animated.View className="flex-row gap-1 p-2 justify-center">
       {dots.map((index) => (
-        <Animated.View key={index} style={[styles.loadingDot, animatedStyles[index]]} />
+        <Animated.View
+          key={index}
+          style={animatedStyles[index]}
+          className="w-2 h-2 rounded-full bg-gray-500 opacity-50"
+        />
       ))}
     </Animated.View>
   );

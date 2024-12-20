@@ -1,3 +1,5 @@
+import { Patient, Practitioner } from "@medplum/fhirtypes";
+
 export interface Thread {
   id: string;
   topic: string;
@@ -8,7 +10,7 @@ export interface Thread {
 export interface ChatMessage {
   id: string;
   text: string;
-  sender: string;
+  senderType: Patient["resourceType"] | Practitioner["resourceType"];
   timestamp: string;
   threadId?: string;
 }
