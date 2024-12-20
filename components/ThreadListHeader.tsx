@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CreateThreadModal } from "@/components/CreateThreadModal";
 import { Button, ButtonIcon, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
-import { Popover, PopoverBody, PopoverContent } from "@/components/ui/popover";
+import { Popover, PopoverBackdrop, PopoverBody, PopoverContent } from "@/components/ui/popover";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
@@ -46,6 +46,7 @@ export function ThreadListHeader({ onLogout }: ThreadListHeaderProps) {
               </Pressable>
             )}
           >
+            <PopoverBackdrop />
             <PopoverContent>
               <PopoverBody>
                 <Pressable
