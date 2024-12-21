@@ -52,8 +52,12 @@ export function useThreads() {
               lastMessageTime: lastMessage?.sent
                 ? formatTimestamp(new Date(lastMessage.sent))
                 : undefined,
+              threadOrder: new Date(
+                lastMessage?.sent || comm.sent || comm.meta?.lastUpdated || new Date(),
+              ).getTime(),
             };
           }) || [];
+        formattedThreads.sort((a, b) => b.threadOrder - a.threadOrder);
 
         setThreads(formattedThreads);
       } finally {

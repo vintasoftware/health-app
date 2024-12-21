@@ -1,10 +1,13 @@
+import { useMedplum } from "@medplum/react-hooks";
 import { useRouter } from "expo-router";
+import { PlusIcon } from "lucide-react-native";
 import { FlatList } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { Avatar } from "@/components/ui/avatar";
 import { Box } from "@/components/ui/box";
+import { Button, ButtonIcon, ButtonText } from "@/components/ui/button";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
@@ -12,6 +15,7 @@ import type { Thread } from "@/types/chat";
 
 interface ThreadListProps {
   threads: Thread[];
+  onCreateThread?: () => void;
 }
 
 function ThreadItem({
@@ -46,8 +50,37 @@ function ThreadItem({
   );
 }
 
-export function ThreadList({ threads }: ThreadListProps) {
+function EmptyState({ onCreateThread }: { onCreateThread?: () => void }) {
+  const medplum = useMedplum();
+  const isPatient = medplum.getProfile()?.resourceType === "Patient";
+
+  return (
+    <View className="flex-1 justify-center items-center p-4">
+      <Text className="text-lg text-typography-600 text-center mb-4">
+        No chat threads yet. {isPatient && "Start a new conversation!"}
+      </Text>
+      {isPatient && onCreateThread && (
+        <Button variant="outline" action="primary" size="md" onPress={onCreateThread}>
+          <ButtonIcon as={PlusIcon} size="sm" />
+          <ButtonText>New Thread</ButtonText>
+        </Button>
+      )}
+    </View>
+  );
+}
+
+export function ThreadList({ threads, onCreateThread }: ThreadListProps) {
   const router = useRouter();
+
+  if (threads.length === 0) {
+    return (
+      <GestureHandlerRootView className="flex-1">
+        <Box className="flex-1">
+          <EmptyState onCreateThread={onCreateThread} />
+        </Box>
+      </GestureHandlerRootView>
+    );
+  }
 
   return (
     <GestureHandlerRootView className="flex-1">
