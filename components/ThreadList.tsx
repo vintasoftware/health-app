@@ -30,7 +30,7 @@ function ThreadItem({
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
       <Pressable onPress={onPress} className="bg-transparent active:bg-secondary-600">
-        <View className="flex-row items-center p-4 gap-3">
+        <View className="flex-row items-center gap-3 p-4">
           <Avatar size="md">
             <Text>{thread.topic.slice(0, 2).toUpperCase()}</Text>
           </Avatar>
@@ -55,8 +55,8 @@ function EmptyState({ onCreateThread }: { onCreateThread?: () => void }) {
   const isPatient = medplum.getProfile()?.resourceType === "Patient";
 
   return (
-    <View className="flex-1 justify-center items-center p-4">
-      <Text className="text-lg text-typography-600 text-center mb-4">
+    <View className="flex-1 items-center justify-center p-4">
+      <Text className="mb-4 text-center text-lg text-typography-600">
         No chat threads yet. {isPatient && "Start a new conversation!"}
       </Text>
       {isPatient && onCreateThread && (

@@ -32,12 +32,12 @@ export function LoadingDots() {
   }, []);
 
   return (
-    <Animated.View className="flex-row gap-1 p-2 justify-center">
+    <Animated.View className="flex-row justify-center gap-1 p-2">
       {dots.map((index) => (
         <Animated.View
           key={index}
           style={animatedStyles[index]}
-          className="w-2 h-2 rounded-full bg-gray-500 opacity-50"
+          className="h-2 w-2 rounded-full bg-gray-500 opacity-50"
         />
       ))}
     </Animated.View>

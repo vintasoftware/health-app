@@ -10,9 +10,9 @@ export function ChatHeader() {
   const router = useRouter();
 
   return (
-    <View className="flex-row items-center p-2 bg-background-50">
+    <View className="flex-row items-center bg-background-50 p-2">
       <Pressable
-        className="p-2 mr-2 active:bg-secondary-600"
+        className="mr-2 p-2 active:bg-secondary-600"
         onPress={() => {
           if (router.canGoBack()) {
             router.back();

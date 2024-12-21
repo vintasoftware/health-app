@@ -17,7 +17,7 @@ export function ThreadListHeader({ onLogout, onCreateThread }: ThreadListHeaderP
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   return (
-    <View className="h-16 flex-row items-center justify-between px-4 bg-background-50">
+    <View className="h-16 flex-row items-center justify-between bg-background-50 px-4">
       <Text size="lg" bold>
         Chat threads
       </Text>
