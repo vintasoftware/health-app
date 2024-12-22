@@ -12,5 +12,6 @@ export interface ChatMessage {
   text: string;
   senderType: Patient["resourceType"] | Practitioner["resourceType"];
   timestamp: string;
+  sentAt: Date;
   threadId?: string;
 }

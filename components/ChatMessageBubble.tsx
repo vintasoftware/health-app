@@ -20,7 +20,7 @@ export function ChatMessageBubble({ message: msg }: ChatMessageBubbleProps) {
     <View className={`mx-2 max-w-[80%] px-2 pb-2 ${wrapperAlignment}`}>
       <View className={`rounded-xl p-3 ${bubbleColor}`}>
         <Text className={textColor}>{msg.text}</Text>
-        <Text className={`mt-1 text-sm opacity-70 ${textColor}`}>{msg.timestamp}</Text>
+        <Text className={`mt-1 text-sm opacity-70 ${textColor}`}>{msg.time}</Text>
       </View>
     </View>
   );

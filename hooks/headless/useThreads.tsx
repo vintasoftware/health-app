@@ -4,7 +4,7 @@ import { useMedplum } from "@medplum/react-hooks";
 import { useEffect, useState } from "react";
 
 import type { Thread } from "@/types/chat";
-import { formatTimestamp } from "@/utils/datetime";
+import { formatTime } from "@/utils/datetime";
 
 export function useThreads() {
   const medplum = useMedplum();
@@ -50,7 +50,7 @@ export function useThreads() {
               topic: comm.payload?.[0]?.contentString || comm.id!,
               lastMessage: lastMessage?.payload?.[0]?.contentString,
               lastMessageTime: lastMessage?.sent
-                ? formatTimestamp(new Date(lastMessage.sent))
+                ? formatTime(new Date(lastMessage.sent))
                 : undefined,
               threadOrder: new Date(
                 lastMessage?.sent || comm.sent || comm.meta?.lastUpdated || new Date(),
