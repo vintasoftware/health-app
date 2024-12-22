@@ -99,7 +99,7 @@ export default function SignIn() {
             error.code === "invalid_request" &&
             error.description?.includes("Invalid code verifier")
           ) {
-            // If the user tries to login right after logout,
+            // If the user tries to login right after unsuccessfully logging out,
             // the server returns an invalid_request error.
             // We can ignore and try again:
             return medplumLogin();
