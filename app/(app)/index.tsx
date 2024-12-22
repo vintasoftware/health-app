@@ -16,7 +16,7 @@ export default function Index() {
   const router = useRouter();
 
   const handleLogout = useCallback(() => {
-    medplum.clear();
+    medplum.signOut();
     router.replace("/sign-in");
   }, [medplum, router]);
 

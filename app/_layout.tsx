@@ -33,7 +33,6 @@ const medplum = new MedplumClient({
   clientId: oauth2ClientId,
   storage: new ExpoClientStorage(),
   onUnauthenticated: () => {
-    medplum.clear();
     router.replace("/sign-in");
   },
 });
