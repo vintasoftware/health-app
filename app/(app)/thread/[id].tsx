@@ -9,7 +9,7 @@ import { useChatMessages } from "@/hooks/headless/useChatMessages";
 
 export default function ThreadPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { message, setMessage, messages, loading, sendMessage } = useChatMessages(id);
+  const { message, setMessage, messages, loading, sendMessage } = useChatMessages({ threadId: id });
 
   if (loading) {
     return (

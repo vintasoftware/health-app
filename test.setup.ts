@@ -15,3 +15,9 @@ beforeAll(() => {
 beforeEach(() => {
   jest.clearAllMocks();
 });
+
+global.CloseEvent = class CloseEvent {
+  constructor(type: string, eventInitDict?: CloseEventInit) {
+    return { type, ...eventInitDict } as CloseEvent;
+  }
+} as unknown as typeof CloseEvent;
