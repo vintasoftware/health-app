@@ -16,7 +16,7 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-// Mock CloseEvent for testing, as react-native-web does not support it
+// Mock CloseEvent for testing, as react-native does not support it
 // https://github.com/facebook/react-native/issues/23468
 global.CloseEvent = class CloseEvent extends Event implements CloseEvent {
   public code: number;
