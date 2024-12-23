@@ -359,10 +359,14 @@ describe("useChatMessages", () => {
   });
 
   test("Updates existing message when receiving update via subscription", async () => {
+    const onMessageUpdatedMock = jest.fn();
     const { medplum, subManager } = await setup();
-    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
-      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
-    });
+    const { result } = renderHook(
+      () => useChatMessages({ threadId: "test-thread", onMessageUpdated: onMessageUpdatedMock }),
+      {
+        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+      },
+    );
 
     // Wait for initial load
     await waitFor(() => {
@@ -371,7 +375,7 @@ describe("useChatMessages", () => {
 
     // Update an existing message
     const updatedMessage = {
-      ...mockMessage1,
+      ...mockMessage2,
       payload: [{ contentString: "Updated message" }],
     };
 
@@ -389,7 +393,7 @@ describe("useChatMessages", () => {
 
     // Verify the message was updated
     await waitFor(() => {
-      expect(result.current.messages[0].text).toBe("Updated message");
+      expect(result.current.messages[1].text).toBe("Updated message");
       expect(result.current.messages).toHaveLength(2);
     });
   });
