@@ -54,9 +54,9 @@ export function useBaseChatCommunications(props: BaseChatProps) {
     onError,
   } = props;
   const medplum = useMedplum();
-
   const [profile, setProfile] = useState(medplum.getProfile());
-  const [reconnecting, setReconnecting] = useState(true);
+  const [reconnecting, setReconnecting] = useState(false);
+  const [connectedOnce, setConnectedOnce] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const profileRefStr = useMemo<string>(
@@ -65,20 +65,25 @@ export function useBaseChatCommunications(props: BaseChatProps) {
   );
 
   const searchMessages = useCallback(async (): Promise<void> => {
-    setLoading(true);
-    const searchParams = new URLSearchParams(query);
-    searchParams.append("_sort", "-sent");
-    const searchResult = await medplum.searchResources("Communication", searchParams, {
-      cache: "no-cache",
-    });
-    upsertCommunications(communicationsRef.current, searchResult, setCommunications);
-    setLoading(false);
-  }, [medplum, setCommunications, query]);
+    try {
+      setLoading(true);
+      const searchParams = new URLSearchParams(query);
+      searchParams.append("_sort", "-sent");
+      const searchResult = await medplum.searchResources("Communication", searchParams, {
+        cache: "no-cache",
+      });
+      upsertCommunications(communicationsRef.current, searchResult, setCommunications);
+    } catch (err) {
+      onError?.(err as Error);
+    } finally {
+      setLoading(false);
+    }
+  }, [query, medplum, setCommunications, onError]);
 
   // Load messages on mount
   useEffect(() => {
-    searchMessages().catch((err) => onError?.(err));
-  }, [searchMessages, onError]);
+    searchMessages();
+  }, [searchMessages]);
 
   // Subscribe to new messages
   useSubscription(
@@ -108,12 +113,15 @@ export function useBaseChatCommunications(props: BaseChatProps) {
       }, [reconnecting, onWebSocketClose]),
       onWebSocketOpen: onWebSocketOpen,
       onSubscriptionConnect: useCallback(() => {
+        if (!connectedOnce) {
+          setConnectedOnce(true);
+        }
         if (reconnecting) {
-          searchMessages().catch((err) => onError?.(err));
+          searchMessages();
           setReconnecting(false);
         }
         onSubscriptionConnect?.();
-      }, [reconnecting, searchMessages, onError, onSubscriptionConnect]),
+      }, [connectedOnce, reconnecting, searchMessages, onSubscriptionConnect]),
       onError: useCallback((err: Error) => onError?.(err), [onError]),
     },
   );
@@ -133,6 +141,7 @@ export function useBaseChatCommunications(props: BaseChatProps) {
 
   return {
     loading,
+    connectedOnce,
     reconnecting,
   };
 }
@@ -173,7 +182,7 @@ export function useChatMessages(props: ChatMessagesProps) {
   const query = `part-of=Communication/${threadId}`;
   const [communications, setCommunications] = useState<Communication[]>([]);
   const [message, setMessage] = useState<string>("");
-  const { loading, reconnecting } = useBaseChatCommunications({
+  const { loading, connectedOnce, reconnecting } = useBaseChatCommunications({
     communications,
     setCommunications,
     query,
@@ -216,6 +225,7 @@ export function useChatMessages(props: ChatMessagesProps) {
     setMessage,
     messages,
     loading,
+    connectedOnce,
     reconnecting,
     sendMessage,
   };

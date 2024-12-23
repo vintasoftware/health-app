@@ -1,4 +1,4 @@
-import { createReference, getWebSocketUrl } from "@medplum/core";
+import { createReference, generateId, getWebSocketUrl } from "@medplum/core";
 import { Bundle, Communication, Patient, Practitioner } from "@medplum/fhirtypes";
 import { MockClient, MockSubscriptionManager } from "@medplum/mock";
 import { MedplumProvider } from "@medplum/react-hooks";
@@ -48,14 +48,14 @@ const mockMessage2: Communication = {
 
 async function createCommunicationSubBundle(communication: Communication): Promise<Bundle> {
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     resourceType: "Bundle",
     type: "history",
     timestamp: new Date().toISOString(),
     entry: [
       {
         resource: {
-          id: crypto.randomUUID(),
+          id: generateId(),
           resourceType: "SubscriptionStatus",
           status: "active",
           type: "event-notification",
@@ -187,89 +187,6 @@ describe("useChatMessages", () => {
     expect(createSpy).not.toHaveBeenCalled();
   });
 
-  test("Handles WebSocket disconnection and reconnection", async () => {
-    const onWebSocketCloseMock = jest.fn();
-    const onWebSocketOpenMock = jest.fn();
-    const onSubscriptionConnectMock = jest.fn();
-    const { medplum, subManager } = await setup();
-    const { result } = renderHook(
-      () =>
-        useChatMessages({
-          threadId: "test-thread",
-          onWebSocketClose: onWebSocketCloseMock,
-          onWebSocketOpen: onWebSocketOpenMock,
-          onSubscriptionConnect: onSubscriptionConnectMock,
-        }),
-      {
-        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
-      },
-    );
-
-    // Wait for initial load
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // Simulate WebSocket disconnection
-    act(() => {
-      subManager.closeWebSocket();
-    });
-
-    // Wait for reconnecting state to update
-    await waitFor(() => {
-      expect(result.current.reconnecting).toBe(true);
-    });
-
-    // Check close callback was called
-    expect(onWebSocketCloseMock).toHaveBeenCalledTimes(1);
-
-    // Create a new message while disconnected
-    const newMessage: Communication = {
-      resourceType: "Communication",
-      id: "msg-3",
-      status: "completed",
-      sent: "2024-01-01T12:03:00Z",
-      sender: createReference(mockPractitioner),
-      payload: [{ contentString: "Message while disconnected" }],
-      partOf: [createReference(mockThread)],
-    };
-    await medplum.createResource(newMessage);
-
-    // Simulate WebSocket reconnection
-    act(() => {
-      subManager.openWebSocket();
-    });
-
-    // Check open callback was called
-    expect(onWebSocketOpenMock).toHaveBeenCalledTimes(1);
-
-    // New message should not be in chat yet
-    expect(result.current.messages).not.toHaveLength(3);
-
-    // Emit subscription connected event
-    act(() => {
-      subManager.emitEventForCriteria(`Communication?part-of=Communication/test-thread`, {
-        type: "connect",
-        payload: { subscriptionId: "test-sub" },
-      });
-    });
-
-    // Check reconnecting state was updated
-    expect(result.current.reconnecting).toBe(false);
-
-    // Check subscription connect callback was called
-    expect(onSubscriptionConnectMock).toHaveBeenCalledTimes(1);
-
-    // Wait for reconnection and message refresh
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.messages).toHaveLength(3);
-    });
-
-    // Verify the new message was fetched after reconnection
-    expect(result.current.messages[2].text).toBe("Message while disconnected");
-  });
-
   test("Handles real-time message incoming", async () => {
     const onMessageReceivedMock = jest.fn();
     const { medplum, subManager } = await setup();
@@ -283,6 +200,19 @@ describe("useChatMessages", () => {
     // Wait for initial load
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
+    });
+
+    // Emit that subscription is connected
+    act(() => {
+      subManager.emitEventForCriteria(`Communication?part-of=Communication/test-thread`, {
+        type: "connect",
+        payload: { subscriptionId: generateId() },
+      });
+    });
+
+    // Wait for connectedOnce to be true
+    await waitFor(() => {
+      expect(result.current.connectedOnce).toBe(true);
     });
 
     // Create a new message
@@ -430,6 +360,153 @@ describe("useChatMessages", () => {
     });
 
     // Verify messages are cleared
+    expect(result.current.messages).toHaveLength(0);
+  });
+
+  test("Handles WebSocket disconnection and reconnection", async () => {
+    const onWebSocketCloseMock = jest.fn();
+    const onWebSocketOpenMock = jest.fn();
+    const onSubscriptionConnectMock = jest.fn();
+    const { medplum, subManager } = await setup();
+    const { result } = renderHook(
+      () =>
+        useChatMessages({
+          threadId: "test-thread",
+          onWebSocketClose: onWebSocketCloseMock,
+          onWebSocketOpen: onWebSocketOpenMock,
+          onSubscriptionConnect: onSubscriptionConnectMock,
+        }),
+      {
+        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+      },
+    );
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Simulate WebSocket disconnection
+    act(() => {
+      subManager.closeWebSocket();
+    });
+
+    // Wait for reconnecting state to update
+    await waitFor(() => {
+      expect(result.current.reconnecting).toBe(true);
+    });
+
+    // Check close callback was called
+    expect(onWebSocketCloseMock).toHaveBeenCalledTimes(1);
+
+    // Create a new message while disconnected
+    const newMessage: Communication = {
+      resourceType: "Communication",
+      id: "msg-3",
+      status: "completed",
+      sent: "2024-01-01T12:03:00Z",
+      sender: createReference(mockPractitioner),
+      payload: [{ contentString: "Message while disconnected" }],
+      partOf: [createReference(mockThread)],
+    };
+    await medplum.createResource(newMessage);
+
+    // Simulate WebSocket reconnection
+    act(() => {
+      subManager.openWebSocket();
+    });
+
+    // Check open callback was called
+    expect(onWebSocketOpenMock).toHaveBeenCalledTimes(1);
+
+    // New message should not be in chat yet
+    expect(result.current.messages).not.toHaveLength(3);
+
+    // Emit subscription connected event
+    act(() => {
+      subManager.emitEventForCriteria(`Communication?part-of=Communication/test-thread`, {
+        type: "connect",
+        payload: { subscriptionId: generateId() },
+      });
+    });
+
+    // Check reconnecting state was updated
+    expect(result.current.reconnecting).toBe(false);
+
+    // Check subscription connect callback was called
+    expect(onSubscriptionConnectMock).toHaveBeenCalledTimes(1);
+
+    // Wait for reconnection and message refresh
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.messages).toHaveLength(3);
+    });
+
+    // Verify the new message was fetched after reconnection
+    expect(result.current.messages[2].text).toBe("Message while disconnected");
+  });
+
+  test("Calls onError callback when subscription error occurs", async () => {
+    const onErrorMock = jest.fn();
+    const { medplum, subManager } = await setup();
+    const { result } = renderHook(
+      () => useChatMessages({ threadId: "test-thread", onError: onErrorMock }),
+      {
+        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+      },
+    );
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Emit error event on subscription
+    act(() => {
+      subManager.emitEventForCriteria(`Communication?part-of=Communication/test-thread`, {
+        type: "error",
+        payload: new Error("Subscription error occurred"),
+      });
+    });
+
+    // Verify the onError callback was called with the error
+    expect(onErrorMock).toHaveBeenCalledTimes(1);
+    expect(onErrorMock).toHaveBeenCalledWith(new Error("Subscription error occurred"));
+  });
+
+  test("Calls onError on first load if search fails", async () => {
+    const onErrorMock = jest.fn();
+    const { medplum } = await setup();
+    const searchSpy = jest.spyOn(medplum, "searchResources");
+
+    // Mock search to throw an error
+    const error = new Error("Failed to load messages");
+    searchSpy.mockRejectedValue(error);
+
+    const { result } = renderHook(
+      () =>
+        useChatMessages({
+          threadId: "test-thread",
+          onError: onErrorMock,
+        }),
+      {
+        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+      },
+    );
+
+    // Initially should be loading
+    expect(result.current.loading).toBe(true);
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Verify the onError callback was called with the error
+    expect(onErrorMock).toHaveBeenCalledWith(error);
+    expect(onErrorMock).toHaveBeenCalledTimes(1);
+
+    // Verify no messages were loaded
     expect(result.current.messages).toHaveLength(0);
   });
 });
