@@ -1,10 +1,11 @@
-import { createReference } from "@medplum/core";
-import { Communication, Patient, Practitioner } from "@medplum/fhirtypes";
-import { MockClient } from "@medplum/mock";
+import { createReference, generateId, getReferenceString, getWebSocketUrl } from "@medplum/core";
+import { Bundle, Communication, Patient, Practitioner } from "@medplum/fhirtypes";
+import { MockClient, MockSubscriptionManager } from "@medplum/mock";
 import { MedplumProvider } from "@medplum/react-hooks";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 
 import { useThreads } from "@/hooks/headless/useThreads";
+import { getQueryString } from "@/utils/url";
 
 const mockPatient: Patient = {
   resourceType: "Patient",
@@ -54,9 +55,48 @@ const mockThread2: Communication = {
   payload: [{ contentString: "Thread 2 Topic" }],
 };
 
+async function createCommunicationSubBundle(communication: Communication): Promise<Bundle> {
+  return {
+    id: generateId(),
+    resourceType: "Bundle",
+    type: "history",
+    timestamp: new Date().toISOString(),
+    entry: [
+      {
+        resource: {
+          id: generateId(),
+          resourceType: "SubscriptionStatus",
+          status: "active",
+          type: "event-notification",
+          subscription: { reference: "Subscription/abc123" },
+          notificationEvent: [
+            {
+              eventNumber: "0",
+              timestamp: new Date().toISOString(),
+              focus: createReference(communication),
+            },
+          ],
+        },
+      },
+      {
+        resource: communication,
+        fullUrl: `https://api.medplum.com/fhir/R4/Communication/${communication.id as string}`,
+      },
+    ],
+  };
+}
+
 describe("useThreads", () => {
-  async function setup(profile: Patient | Practitioner = mockPatient): Promise<MockClient> {
+  async function setup(
+    profile: Patient | Practitioner = mockPatient,
+  ): Promise<{ medplum: MockClient; subManager: MockSubscriptionManager }> {
     const medplum = new MockClient({ profile });
+    const subManager = new MockSubscriptionManager(
+      medplum,
+      getWebSocketUrl(medplum.getBaseUrl(), "/ws/subscriptions-r4"),
+      { mockReconnectingWebSocket: true },
+    );
+    medplum.setSubscriptionManager(subManager);
 
     // Setup mock data
     await medplum.createResource(mockPatient);
@@ -65,11 +105,11 @@ describe("useThreads", () => {
     await medplum.createResource(mockMessage2);
     await medplum.createResource(mockThread2);
 
-    return medplum;
+    return { medplum, subManager };
   }
 
   test("Loads and displays threads for patient", async () => {
-    const medplum = await setup();
+    const { medplum } = await setup();
     const searchSpy = jest.spyOn(medplum, "search");
 
     // Mock the search implementation to return results with search modes
@@ -134,8 +174,8 @@ describe("useThreads", () => {
     });
   });
 
-  test("Handles no threads", async (profile: Patient | Practitioner = mockPatient) => {
-    const medplum = new MockClient({ profile });
+  test("Handles no threads", async () => {
+    const { medplum } = await setup();
     const searchSpy = jest.spyOn(medplum, "search");
 
     // Mock empty search results
@@ -164,7 +204,7 @@ describe("useThreads", () => {
   });
 
   test("Loads all threads for practitioner", async () => {
-    const medplum = await setup(mockPractitioner);
+    const { medplum } = await setup(mockPractitioner);
     const searchSpy = jest.spyOn(medplum, "search");
 
     const { result } = renderHook(() => useThreads(), {
@@ -185,7 +225,7 @@ describe("useThreads", () => {
   });
 
   test("Creates new thread successfully", async () => {
-    const medplum = await setup();
+    const { medplum } = await setup();
     const createSpy = jest.spyOn(medplum, "createResource");
 
     const { result } = renderHook(() => useThreads(), {
@@ -229,7 +269,7 @@ describe("useThreads", () => {
   });
 
   test("Prevents non-patient from creating thread", async () => {
-    const medplum = await setup(mockPractitioner);
+    const { medplum } = await setup(mockPractitioner);
 
     const { result } = renderHook(() => useThreads(), {
       wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
@@ -245,7 +285,7 @@ describe("useThreads", () => {
   });
 
   test("Does not create thread with empty topic", async () => {
-    const medplum = await setup();
+    const { medplum } = await setup();
     const createSpy = jest.spyOn(medplum, "createResource");
 
     const { result } = renderHook(() => useThreads(), {
@@ -262,7 +302,7 @@ describe("useThreads", () => {
   });
 
   test("Orders threads correctly by last activity", async () => {
-    const medplum = new MockClient({ profile: mockPatient });
+    const { medplum } = await setup();
     const searchSpy = jest.spyOn(medplum, "search");
 
     // Create threads with different timestamps
@@ -364,5 +404,339 @@ describe("useThreads", () => {
         lastMessageSentAt: undefined,
       }),
     );
+  });
+
+  test("Handles real-time thread updates", async () => {
+    const { medplum, subManager } = await setup();
+    const searchSpy = jest.spyOn(medplum, "search");
+
+    // Mock the search implementation to return results with search modes
+    // (the default mock client doesn't support search modes)
+    searchSpy.mockResolvedValue({
+      resourceType: "Bundle",
+      type: "searchset",
+      entry: [
+        {
+          search: { mode: "match" },
+          resource: mockThread1,
+        },
+        {
+          search: { mode: "include" },
+          resource: mockMessage1,
+        },
+        {
+          search: { mode: "include" },
+          resource: mockMessage2,
+        },
+        {
+          search: { mode: "match" },
+          resource: mockThread2,
+        },
+      ],
+    });
+
+    const { result } = renderHook(() => useThreads(), {
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    });
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Emit that subscription is connected
+    const criteria = getQueryString({
+      "part-of:missing": true,
+      subject: getReferenceString(mockPatient),
+      _revinclude: "Communication:part-of",
+    });
+    act(() => {
+      subManager.emitEventForCriteria(`Communication?${criteria}`, {
+        type: "connect",
+        payload: { subscriptionId: generateId() },
+      });
+    });
+
+    // Wait for connectedOnce to be true
+    await waitFor(() => {
+      expect(result.current.connectedOnce).toBe(true);
+    });
+
+    // Create a new message in an existing thread
+    const newMessage: Communication = {
+      resourceType: "Communication",
+      id: "msg-3",
+      status: "completed",
+      sent: "2024-01-01T12:03:00Z",
+      sender: createReference(mockPatient),
+      payload: [{ contentString: "New message in thread" }],
+      partOf: [createReference(mockThread1)],
+    };
+
+    // Create the resource and wait for it to be saved
+    await medplum.createResource(newMessage);
+
+    // Mock the search implementation to return the new message
+    searchSpy.mockResolvedValue({
+      resourceType: "Bundle",
+      type: "searchset",
+      entry: [
+        {
+          search: { mode: "match" },
+          resource: mockThread1,
+        },
+        {
+          search: { mode: "include" },
+          resource: mockMessage1,
+        },
+        {
+          search: { mode: "include" },
+          resource: mockMessage2,
+        },
+        {
+          search: { mode: "include" },
+          resource: newMessage,
+        },
+        {
+          search: { mode: "match" },
+          resource: mockThread2,
+        },
+      ],
+    });
+
+    // Create and emit the subscription bundle
+    const bundle = await createCommunicationSubBundle(newMessage);
+    act(() => {
+      subManager.emitEventForCriteria(`Communication?${criteria}`, {
+        type: "message",
+        payload: bundle,
+      });
+    });
+
+    // Verify the thread list was updated with the new message
+    await waitFor(() => {
+      const updatedThread = result.current.threads.find((t) => t.id === mockThread1.id);
+      expect(updatedThread?.lastMessage).toBe("New message in thread");
+      expect(updatedThread?.lastMessageSentAt).toEqual(new Date(newMessage.sent!));
+    });
+  });
+
+  test("Threads cleared if profile changes", async () => {
+    const { medplum } = await setup(mockPractitioner);
+
+    // Mock the search implementation
+    const searchSpy = jest.spyOn(medplum, "search");
+    searchSpy.mockResolvedValue({
+      resourceType: "Bundle",
+      type: "searchset",
+      entry: [
+        {
+          search: { mode: "match" },
+          resource: mockThread1,
+        },
+        {
+          search: { mode: "match" },
+          resource: mockThread2,
+        },
+      ],
+    });
+
+    const { result } = renderHook(() => useThreads(), {
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    });
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Verify initial threads are loaded
+    expect(result.current.threads).toHaveLength(2);
+    expect(result.current.threads[0].id).toBe("test-thread-2");
+    expect(result.current.threads[1].id).toBe("test-thread-1");
+
+    // Mock the search implementation to return no threads
+    searchSpy.mockResolvedValue({
+      resourceType: "Bundle",
+      type: "searchset",
+      entry: [],
+    });
+
+    // Change the profile
+    await act(async () => {
+      medplum.setProfile(mockPatient);
+    });
+
+    // Wait for loading to complete with new profile
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Verify threads are cleared
+    expect(result.current.threads).toEqual([]);
+  });
+
+  test("Handles WebSocket disconnection and reconnection", async () => {
+    const onWebSocketCloseMock = jest.fn();
+    const onWebSocketOpenMock = jest.fn();
+    const onSubscriptionConnectMock = jest.fn();
+    const { medplum, subManager } = await setup();
+    const searchSpy = jest.spyOn(medplum, "search");
+
+    const { result } = renderHook(
+      () =>
+        useThreads({
+          onWebSocketClose: onWebSocketCloseMock,
+          onWebSocketOpen: onWebSocketOpenMock,
+          onSubscriptionConnect: onSubscriptionConnectMock,
+        }),
+      {
+        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+      },
+    );
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Simulate WebSocket disconnection
+    act(() => {
+      subManager.closeWebSocket();
+    });
+
+    // Wait for reconnecting state to update
+    await waitFor(() => {
+      expect(result.current.reconnecting).toBe(true);
+    });
+
+    // Check close callback was called
+    expect(onWebSocketCloseMock).toHaveBeenCalledTimes(1);
+
+    // Create a new thread while disconnected
+    const newThread: Communication = {
+      resourceType: "Communication",
+      id: "thread-new",
+      status: "completed",
+      sent: "2024-01-01T12:03:00Z",
+      sender: createReference(mockPatient),
+      payload: [{ contentString: "Thread created while disconnected" }],
+    };
+    await medplum.createResource(newThread);
+
+    // Mock the search implementation to return the new thread
+    searchSpy.mockResolvedValue({
+      resourceType: "Bundle",
+      type: "searchset",
+      entry: [
+        {
+          search: { mode: "match" },
+          resource: newThread,
+        },
+      ],
+    });
+
+    // Simulate WebSocket reconnection
+    act(() => {
+      subManager.openWebSocket();
+    });
+
+    // Check open callback was called
+    expect(onWebSocketOpenMock).toHaveBeenCalledTimes(1);
+
+    // New thread should not be in list yet
+    expect(result.current.threads.find((t) => t.id === "thread-new")).toBeUndefined();
+
+    // Emit subscription connected event
+    const criteria = getQueryString({
+      "part-of:missing": true,
+      subject: getReferenceString(mockPatient),
+      _revinclude: "Communication:part-of",
+    });
+    act(() => {
+      subManager.emitEventForCriteria(`Communication?${criteria}`, {
+        type: "connect",
+        payload: { subscriptionId: generateId() },
+      });
+    });
+
+    // Check reconnecting state was updated
+    expect(result.current.reconnecting).toBe(false);
+
+    // Check subscription connect callback was called
+    expect(onSubscriptionConnectMock).toHaveBeenCalledTimes(1);
+
+    // Wait for reconnection and thread refresh
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      const newThreadInList = result.current.threads.find((t) => t.id === "thread-new");
+      expect(newThreadInList).toBeDefined();
+      expect(newThreadInList?.topic).toBe("Thread created while disconnected");
+    });
+  });
+
+  test("Calls onError callback when subscription error occurs", async () => {
+    const onErrorMock = jest.fn();
+    const { medplum, subManager } = await setup();
+    const { result } = renderHook(() => useThreads({ onError: onErrorMock }), {
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    });
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Emit error event on subscription
+    const criteria = getQueryString({
+      "part-of:missing": true,
+      subject: getReferenceString(mockPatient),
+      _revinclude: "Communication:part-of",
+    });
+    act(() => {
+      subManager.emitEventForCriteria(`Communication?${criteria}`, {
+        type: "error",
+        payload: new Error("Subscription error occurred"),
+      });
+    });
+
+    // Verify the onError callback was called with the error
+    expect(onErrorMock).toHaveBeenCalledTimes(1);
+    expect(onErrorMock).toHaveBeenCalledWith(new Error("Subscription error occurred"));
+  });
+
+  test("Calls onError on first load if search fails", async () => {
+    const onErrorMock = jest.fn();
+    const { medplum } = await setup();
+    const searchSpy = jest.spyOn(medplum, "search");
+
+    // Mock search to throw an error
+    const error = new Error("Failed to load threads");
+    searchSpy.mockRejectedValue(error);
+
+    const { result } = renderHook(
+      () =>
+        useThreads({
+          onError: onErrorMock,
+        }),
+      {
+        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+      },
+    );
+
+    // Initially should be loading
+    expect(result.current.loading).toBe(true);
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Verify the onError callback was called with the error
+    expect(onErrorMock).toHaveBeenCalledTimes(1);
+    expect(onErrorMock).toHaveBeenCalledWith(error);
+
+    // Verify no threads were loaded
+    expect(result.current.threads).toEqual([]);
   });
 });
