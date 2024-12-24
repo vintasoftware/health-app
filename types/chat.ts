@@ -5,6 +5,7 @@ export interface Thread {
   topic: string;
   lastMessage?: string;
   lastMessageSentAt?: Date;
+  threadOrder: number;
 }
 
 export interface ChatMessage {
@@ -13,4 +14,5 @@ export interface ChatMessage {
   senderType: Patient["resourceType"] | Practitioner["resourceType"];
   sentAt: Date;
   threadId?: string;
+  messageOrder: number;
 }

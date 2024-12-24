@@ -5,6 +5,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ChatMessage } from "@/types/chat";
 
+function getMessageOrder(comm: Communication): number {
+  const sent = comm.sent || comm.meta?.lastUpdated || new Date();
+  return new Date(sent).getTime();
+}
+
 function setAndSortCommunications(
   communications: Communication[],
   received: Communication[],
@@ -23,7 +28,7 @@ function setAndSortCommunications(
   }
 
   if (foundNew) {
-    newCommunications.sort((a, b) => (a.sent as string).localeCompare(b.sent as string));
+    newCommunications.sort((a, b) => getMessageOrder(a) - getMessageOrder(b));
   }
 
   setCommunications(newCommunications);
@@ -64,7 +69,7 @@ export function useBaseChatCommunications(props: BaseChatProps) {
     [profile, medplum],
   );
 
-  const searchMessages = useCallback(async (): Promise<void> => {
+  const fetchMessages = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       const searchParams = new URLSearchParams(query);
@@ -82,8 +87,8 @@ export function useBaseChatCommunications(props: BaseChatProps) {
 
   // Load messages on mount
   useEffect(() => {
-    searchMessages();
-  }, [searchMessages]);
+    fetchMessages();
+  }, [fetchMessages]);
 
   // Subscribe to new messages
   useSubscription(
@@ -105,23 +110,23 @@ export function useBaseChatCommunications(props: BaseChatProps) {
       }
     },
     {
+      onWebSocketOpen: onWebSocketOpen,
       onWebSocketClose: useCallback(() => {
         if (!reconnecting) {
           setReconnecting(true);
         }
         onWebSocketClose?.();
       }, [reconnecting, onWebSocketClose]),
-      onWebSocketOpen: onWebSocketOpen,
       onSubscriptionConnect: useCallback(() => {
         if (!connectedOnce) {
           setConnectedOnce(true);
         }
         if (reconnecting) {
-          searchMessages();
+          fetchMessages();
           setReconnecting(false);
         }
         onSubscriptionConnect?.();
-      }, [connectedOnce, reconnecting, searchMessages, onSubscriptionConnect]),
+      }, [connectedOnce, reconnecting, fetchMessages, onSubscriptionConnect]),
       onError: useCallback((err: Error) => onError?.(err), [onError]),
     },
   );
@@ -164,6 +169,7 @@ export function communicationToMessage(communication: Communication): ChatMessag
       ? "Patient"
       : "Practitioner") as "Patient" | "Practitioner",
     sentAt: new Date(communication.sent as string),
+    messageOrder: getMessageOrder(communication),
   };
 }
 
@@ -198,7 +204,7 @@ export function useChatMessages(props: ChatMessagesProps) {
   const sendMessage = useCallback(async () => {
     if (!message.trim() || !profile) return;
 
-    let newCommunication: Communication = {
+    const newCommunication = await medplum.createResource({
       resourceType: "Communication",
       status: "completed",
       sent: new Date().toISOString(),
@@ -213,8 +219,7 @@ export function useChatMessages(props: ChatMessagesProps) {
           reference: `Communication/${threadId}`,
         },
       ],
-    };
-    newCommunication = await medplum.createResource(newCommunication);
+    } as Communication);
 
     setCommunications([...communications, newCommunication]);
     setMessage("");
