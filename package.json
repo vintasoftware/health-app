@@ -10,7 +10,7 @@
     "web": "DARK_MODE=media expo start --web",
     "test": "jest --watchAll",
     "test:ci": "jest --coverage",
-    "lint": "expo lint",
+    "lint": "eslint",
     "prepare": "husky"
   },
   "lint-staged": {
