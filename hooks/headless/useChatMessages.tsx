@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ChatMessage } from "@/types/chat";
 
-function upsertCommunications(
+function setAndSortCommunications(
   communications: Communication[],
   received: Communication[],
   setCommunications: (communications: Communication[]) => void,
@@ -72,7 +72,7 @@ export function useBaseChatCommunications(props: BaseChatProps) {
       const searchResult = await medplum.searchResources("Communication", searchParams, {
         cache: "no-cache",
       });
-      upsertCommunications(communicationsRef.current, searchResult, setCommunications);
+      setAndSortCommunications(communicationsRef.current, searchResult, setCommunications);
     } catch (err) {
       onError?.(err as Error);
     } finally {
@@ -90,7 +90,7 @@ export function useBaseChatCommunications(props: BaseChatProps) {
     `Communication?${query}`,
     (bundle: Bundle) => {
       const communication = bundle.entry?.[1]?.resource as Communication;
-      upsertCommunications(communicationsRef.current, [communication], setCommunications);
+      setAndSortCommunications(communicationsRef.current, [communication], setCommunications);
       // If we are the sender of this message, then we want to skip calling `onMessageUpdated` or `onMessageReceived`
       if (getReferenceString(communication.sender as Reference) === profileRefStr) {
         return;
