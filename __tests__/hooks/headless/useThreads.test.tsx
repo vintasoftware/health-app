@@ -521,6 +521,61 @@ describe("useThreads", () => {
     });
   });
 
+  test("Threads cleared if profile changes", async () => {
+    const { medplum } = await setup(mockPractitioner);
+
+    // Mock the search implementation
+    const searchSpy = jest.spyOn(medplum, "search");
+    searchSpy.mockResolvedValue({
+      resourceType: "Bundle",
+      type: "searchset",
+      entry: [
+        {
+          search: { mode: "match" },
+          resource: mockThread1,
+        },
+        {
+          search: { mode: "match" },
+          resource: mockThread2,
+        },
+      ],
+    });
+
+    const { result } = renderHook(() => useThreads(), {
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    });
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Verify initial threads are loaded
+    expect(result.current.threads).toHaveLength(2);
+    expect(result.current.threads[0].id).toBe("test-thread-2");
+    expect(result.current.threads[1].id).toBe("test-thread-1");
+
+    // Mock the search implementation to return no threads
+    searchSpy.mockResolvedValue({
+      resourceType: "Bundle",
+      type: "searchset",
+      entry: [],
+    });
+
+    // Change the profile
+    await act(async () => {
+      medplum.setProfile(mockPatient);
+    });
+
+    // Wait for loading to complete with new profile
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Verify threads are cleared
+    expect(result.current.threads).toEqual([]);
+  });
+
   test("Handles WebSocket disconnection and reconnection", async () => {
     const onWebSocketCloseMock = jest.fn();
     const onWebSocketOpenMock = jest.fn();
