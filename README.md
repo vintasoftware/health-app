@@ -20,7 +20,7 @@ The chat system is built using FHIR `Communication` and `Subscription` resources
 
 ### UI components
 
-UI components are built using [gluestack-ui v2](https://ui.gluestack.com/). All original components from the library are kept as-is under the `components/ui` directory, but additional components are added to the same directory to support the app's requirements. Domain-specific components are at `components` directory.
+UI components are built using [gluestack-ui v2](https://gluestack.io/). All original components from the library are kept as-is under the `components/ui` directory, but additional components are added to the same directory to support the app's requirements. Domain-specific components are at `components` directory.
 
 ## Getting Started
 
