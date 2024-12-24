@@ -70,11 +70,12 @@ export function useThreads(props: ThreadsProps = {}) {
                 e.search?.mode === "include" &&
                 e.resource?.partOf?.[0]?.reference === `Communication/${comm.id}`,
             )
-            .sort((e1, e2) =>
-              e1.resource?.sent && e2.resource?.sent
-                ? new Date(e2.resource.sent).getTime() - new Date(e1.resource.sent).getTime()
-                : 1,
-            )?.[0]?.resource;
+            .sort((e1, e2) => {
+              if (!e1.resource?.sent) return 1;
+              if (!e2.resource?.sent) return -1;
+              return new Date(e1.resource.sent).getTime() - new Date(e2.resource.sent).getTime();
+            })
+            .reverse()?.[0]?.resource;
           return communicationToThread(comm, lastMessage);
         }) || [];
 
