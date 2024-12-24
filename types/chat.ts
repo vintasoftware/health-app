@@ -4,13 +4,13 @@ export interface Thread {
   id: string;
   topic: string;
   lastMessage?: string;
-  lastMessageTime?: string;
+  lastMessageSentAt?: Date;
 }
 
 export interface ChatMessage {
   id: string;
   text: string;
   senderType: Patient["resourceType"] | Practitioner["resourceType"];
-  timestamp: string;
+  sentAt: Date;
   threadId?: string;
 }

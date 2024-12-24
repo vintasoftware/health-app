@@ -8,15 +8,15 @@ A sample healthcare mobile application built with Expo and React Native, using [
 
 The app uses OAuth2 to authenticate users with a Medplum instance.
 
-### Secure Chat System
+### Secure Real-Time Chat System
 
-The app implements a secure chat system following Medplum's ["Organizing Communications Using Threads"](https://www.medplum.com/docs/communications/organizing-communications) architecture. This allows patients to:
+The app implements a secure real-time chat system following Medplum's ["Organizing Communications Using Threads"](https://www.medplum.com/docs/communications/organizing-communications) architecture. This allows patients to:
 
 - View all their chat threads with healthcare providers
 - Send and receive messages in real-time
 - Access chat history securely
 
-The chat system is built using FHIR `Communication` resources, ensuring healthcare compliance and data interoperability.
+The chat system is built using FHIR `Communication` and `Subscription` resources, ensuring healthcare compliance and data interoperability.
 
 ### UI components
 
@@ -37,35 +37,6 @@ UI components are built using [gluestack-ui v2](https://ui.gluestack.com/). All 
     npm install
     ```
 
-### Configuring Medplum OAuth2
-
-1. Create a Medplum account and a project (in case you don't have one yet): https://app.medplum.com/register
-
-2. Inside your Medplum project, [invite a new Patient user](https://app.medplum.com/admin/invite). Use a different email address here, because that will be your test Patient user.
-
-3. Also, [invite a new Practitioner user](https://app.medplum.com/admin/invite). Use a different email address here, because that will be your test Practitioner user.
-
-4. Create two Medplum Client Applications and get their client IDs:
-
-    1. As a Medplum project admin, go to [Client Applications](https://app.medplum.com/ClientApplication) admin page
-    2. Create two new client applications, one for web and one for native.
-    3. Set the Redirect URI to `http://localhost:8081` for the web client and something like `exp://192.168.???.???:8081` for the native client.
-        - Run `npm start` and check the "Metro waiting on" message in the terminal to get the IP address to use in the Redirect URI.
-    4. Copy the client ID for both applications.
-
-5. Copy the `.env.local.example` file to `.env.local`
-
-    ```bash
-    cp .env.local.example .env.local
-    ```
-
-6. Fill in the values in the `.env.local` file:
-
-    ```bash
-    EXPO_PUBLIC_MEDPLUM_WEB_CLIENT_ID=your_web_client_id
-    EXPO_PUBLIC_MEDPLUM_NATIVE_CLIENT_ID=your_native_client_id
-    ```
-
 ### Running the App
 
 Start the development server:
@@ -79,6 +50,37 @@ This will open the Expo CLI where you can choose to run the app on:
 - Android Emulator
 - Web browser
 - Physical device using Expo Go
+
+NOTE: Login will not work yet, because Medplum's OAuth2 is not set. See the next section.
+
+### Configuring Medplum OAuth2
+
+1. Create a Medplum account and a project (in case you don't have one yet): https://app.medplum.com/register
+
+2. Inside your Medplum project, [invite a new Patient user](https://app.medplum.com/admin/invite). Use a different email address here, because that will be your test Patient user.
+
+3. Also, [invite a new Practitioner user](https://app.medplum.com/admin/invite). Use a different email address here, because that will be your test Practitioner user.
+
+4. Create two Medplum Client Applications and get their client IDs:
+
+    1. As a Medplum project admin, go to [Client Applications](https://app.medplum.com/ClientApplication) admin page
+    2. Create two new client applications, one for web and one for native.
+    3. Set the Redirect URI to `http://localhost:8081` for the web client and something like `exp://192.168.???.???:8081` for the native client.
+        - Run `npm start`, run the app on your device with Expo Go, and check the "Redirect URL: ..." log message in the terminal to get the IP address to use.
+    4. After creating the two new client applications, copy the client ID from both.
+
+5. Copy the `.env.local.example` file to `.env.local`
+
+    ```bash
+    cp .env.local.example .env.local
+    ```
+
+6. Fill in the values in the `.env.local` file:
+
+    ```bash
+    EXPO_PUBLIC_MEDPLUM_WEB_CLIENT_ID=your_web_client_id
+    EXPO_PUBLIC_MEDPLUM_NATIVE_CLIENT_ID=your_native_client_id
+    ```
 
 ### Testing
 

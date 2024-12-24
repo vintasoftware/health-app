@@ -15,3 +15,17 @@ beforeAll(() => {
 beforeEach(() => {
   jest.clearAllMocks();
 });
+
+// Mock CloseEvent for testing, as react-native does not support it
+// https://github.com/facebook/react-native/issues/23468
+global.CloseEvent = class CloseEvent extends Event implements CloseEvent {
+  public code: number;
+  public reason: string;
+  public wasClean = true;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  constructor(code = 1000, reason = "", target: any) {
+    super("close", target);
+    this.code = code;
+    this.reason = reason;
+  }
+} as unknown as typeof globalThis.CloseEvent;

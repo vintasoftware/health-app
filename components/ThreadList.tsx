@@ -12,6 +12,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import type { Thread } from "@/types/chat";
+import { formatTime } from "@/utils/datetime";
 
 interface ThreadListProps {
   threads: Thread[];
@@ -42,7 +43,9 @@ function ThreadItem({
             </Text>
           </View>
 
-          <Text className="text-xs text-typography-500">{thread.lastMessageTime}</Text>
+          <Text className="text-xs text-typography-500">
+            {thread.lastMessageSentAt ? formatTime(thread.lastMessageSentAt) : ""}
+          </Text>
         </View>
       </Pressable>
       <View className="h-[1px] bg-outline-200" />

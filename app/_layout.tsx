@@ -7,7 +7,8 @@ import {
   polyfillMedplumWebAPIs,
 } from "@medplum/expo-polyfills";
 import { MedplumProvider } from "@medplum/react-hooks";
-import { ErrorBoundaryProps, router, Stack } from "expo-router";
+import { makeRedirectUri } from "expo-auth-session";
+import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
@@ -23,11 +24,6 @@ export const unstable_settings = {
 
 SplashScreen.preventAutoHideAsync();
 
-export function ErrorBoundary({ error, _retry }: ErrorBoundaryProps) {
-  console.log(error);
-  return null;
-}
-
 polyfillMedplumWebAPIs();
 const medplum = new MedplumClient({
   clientId: oauth2ClientId,
@@ -42,6 +38,13 @@ export default function RootLayout() {
   useEffect(() => {
     // Prevents flickering:
     requestAnimationFrame(SplashScreen.hideAsync);
+  }, []);
+
+  useEffect(() => {
+    // Print redirect URL on startup
+    if (__DEV__) {
+      console.log("Redirect URL:", makeRedirectUri());
+    }
   }, []);
 
   return (

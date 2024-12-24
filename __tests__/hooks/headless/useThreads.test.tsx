@@ -5,7 +5,6 @@ import { MedplumProvider } from "@medplum/react-hooks";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 
 import { useThreads } from "@/hooks/headless/useThreads";
-import { formatTimestamp } from "@/utils/datetime";
 
 const mockPatient: Patient = {
   resourceType: "Patient",
@@ -125,13 +124,13 @@ describe("useThreads", () => {
       id: "test-thread-2",
       topic: "Thread 2 Topic",
       lastMessage: undefined,
-      lastMessageTime: undefined,
+      lastMessageSentAt: undefined,
     });
     expect(result.current.threads[1]).toMatchObject({
       id: "test-thread-1",
       topic: "Thread 1 Topic",
       lastMessage: "Last message",
-      lastMessageTime: formatTimestamp(new Date(mockMessage2.sent!)),
+      lastMessageSentAt: new Date(mockMessage2.sent!),
     });
   });
 
@@ -344,7 +343,7 @@ describe("useThreads", () => {
         id: "thread-3",
         topic: "Thread 3",
         lastMessage: "Message in thread 3",
-        lastMessageTime: formatTimestamp(new Date(thread3Message.sent!)),
+        lastMessageSentAt: new Date(thread3Message.sent!),
       }),
     );
 
@@ -353,7 +352,7 @@ describe("useThreads", () => {
         id: "thread-1",
         topic: "Thread 1",
         lastMessage: "Message in thread 1",
-        lastMessageTime: formatTimestamp(new Date(thread1Message.sent!)),
+        lastMessageSentAt: new Date(thread1Message.sent!),
       }),
     );
 
@@ -362,7 +361,7 @@ describe("useThreads", () => {
         id: "thread-2",
         topic: "Thread 2",
         lastMessage: undefined,
-        lastMessageTime: undefined,
+        lastMessageSentAt: undefined,
       }),
     );
   });
