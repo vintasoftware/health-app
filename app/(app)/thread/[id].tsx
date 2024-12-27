@@ -1,4 +1,6 @@
+import { useMedplum } from "@medplum/react-hooks";
 import { useLocalSearchParams } from "expo-router";
+import { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ChatHeader } from "@/components/ChatHeader";
@@ -8,8 +10,20 @@ import { Spinner } from "@/components/ui/spinner";
 import { useChatMessages } from "@/hooks/headless/useChatMessages";
 
 export default function ThreadPage() {
+  const medplum = useMedplum();
+  const profile = medplum.getProfile();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { message, setMessage, messages, loading, sendMessage } = useChatMessages({ threadId: id });
+  const { message, setMessage, messages, loading, sendMessage, markMessageAsRead } =
+    useChatMessages({ threadId: id });
+
+  // Mark all unread messages from others as read
+  useEffect(() => {
+    messages.forEach((message) => {
+      if (!message.read && message.senderType !== profile?.resourceType) {
+        markMessageAsRead(message.id);
+      }
+    });
+  }, [messages, profile, markMessageAsRead]);
 
   if (loading) {
     return (

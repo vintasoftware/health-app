@@ -6,6 +6,7 @@ export interface Thread {
   lastMessage?: string;
   lastMessageSentAt?: Date;
   threadOrder: number;
+  unreadCount: number;
 }
 
 export interface ChatMessage {
@@ -15,4 +16,6 @@ export interface ChatMessage {
   sentAt: Date;
   threadId?: string;
   messageOrder: number;
+  received?: Date;
+  read: boolean;
 }

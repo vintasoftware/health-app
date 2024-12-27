@@ -37,7 +37,14 @@ function ThreadItem({
           </Avatar>
 
           <View className="flex-1">
-            <Text className="text-base font-medium text-typography-900">{thread.topic}</Text>
+            <View className="flex-row items-center gap-2">
+              <Text className="text-base font-medium text-typography-900">{thread.topic}</Text>
+              {thread.unreadCount > 0 && (
+                <View className="rounded-full bg-primary-500 px-2 py-0.5">
+                  <Text className="text-xs text-typography-0">{thread.unreadCount}</Text>
+                </View>
+              )}
+            </View>
             <Text className="text-sm text-typography-600" numberOfLines={1}>
               {thread.lastMessage}
             </Text>
