@@ -661,13 +661,14 @@ describe("useChatMessages", () => {
     // Wait for initial load
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
+      const message = result.current.messages.find((m) => m.id === newMessage.id);
+      expect(message?.read).toBe(true);
     });
 
     // Mark message as read
     await act(async () => {
       await result.current.markMessageAsRead(newMessage.id!);
     });
-
     // Verify message is still marked as read
     await waitFor(() => {
       const message = result.current.messages.find((m) => m.id === newMessage.id);
