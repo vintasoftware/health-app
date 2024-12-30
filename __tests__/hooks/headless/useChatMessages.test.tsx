@@ -29,7 +29,7 @@ const mockThread: Communication = {
 const mockMessage1: Communication = {
   resourceType: "Communication",
   id: "msg-1",
-  status: "completed",
+  status: "in-progress",
   sent: "2024-01-01T12:01:00Z",
   sender: createReference(mockPatient),
   payload: [{ contentString: "Hello" }],
@@ -39,7 +39,7 @@ const mockMessage1: Communication = {
 const mockMessage2: Communication = {
   resourceType: "Communication",
   id: "msg-2",
-  status: "completed",
+  status: "in-progress",
   sent: "2024-01-01T12:02:00Z",
   sender: createReference(mockPractitioner),
   payload: [{ contentString: "Hi there" }],
@@ -147,7 +147,7 @@ describe("useChatMessages", () => {
     expect(createSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         resourceType: "Communication",
-        status: "completed",
+        status: "in-progress",
         sender: {
           reference: "Patient/test-patient",
           display: "John Doe",
@@ -246,7 +246,7 @@ describe("useChatMessages", () => {
 
     // Verify the onMessageReceived callback was called
     expect(onMessageReceivedMock).toHaveBeenCalledTimes(1);
-    expect(onMessageReceivedMock).toHaveBeenCalledWith(newMessage);
+    expect(onMessageReceivedMock).toHaveBeenCalledWith(expect.objectContaining(newMessage));
   });
 
   test("Ignores outgoing new message on subscription", async () => {
@@ -326,6 +326,10 @@ describe("useChatMessages", () => {
       expect(result.current.messages[1].text).toBe("Updated message");
       expect(result.current.messages).toHaveLength(2);
     });
+
+    // Verify the onMessageUpdated callback was called
+    expect(onMessageUpdatedMock).toHaveBeenCalledTimes(1);
+    expect(onMessageUpdatedMock).toHaveBeenCalledWith(expect.objectContaining(updatedMessage));
   });
 
   test("Messages cleared if profile changes", async () => {
@@ -508,5 +512,167 @@ describe("useChatMessages", () => {
 
     // Verify no messages were loaded
     expect(result.current.messages).toHaveLength(0);
+  });
+
+  test("New message starts with sent status only", async () => {
+    const { medplum } = await setup();
+    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    });
+
+    // Send a new message
+    act(() => {
+      result.current.setMessage("New message");
+    });
+
+    await act(async () => {
+      await result.current.sendMessage();
+    });
+
+    // Wait for messages to update
+    await waitFor(() => {
+      const lastMessage = result.current.messages[result.current.messages.length - 1];
+      expect(lastMessage.sentAt).toBeDefined();
+      expect(lastMessage.received).toBeUndefined();
+      expect(lastMessage.read).toBe(false);
+    });
+  });
+
+  test("Received status is set when messages are rendered first time", async () => {
+    const { medplum } = await setup();
+
+    // Create a new message from practitioner without received status
+    const newMessage: Communication = {
+      resourceType: "Communication",
+      id: "msg-3",
+      status: "in-progress",
+      sent: new Date().toISOString(),
+      sender: createReference(mockPractitioner),
+      payload: [{ contentString: "Test initial received status" }],
+      partOf: [createReference(mockThread)],
+    };
+    await medplum.createResource(newMessage);
+
+    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    });
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Verify the message in the list has received status
+    await waitFor(() => {
+      const message = result.current.messages.find((m) => m.id === "msg-3");
+      expect(message?.received).toBeDefined();
+      expect(message?.read).toBe(false);
+    });
+  });
+
+  test("Received status is set when message is received by other user", async () => {
+    const { medplum, subManager } = await setup();
+    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    });
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Create a new incoming message without received status
+    const newMessage: Communication = {
+      resourceType: "Communication",
+      id: "msg-3",
+      status: "in-progress",
+      sent: new Date().toISOString(),
+      sender: createReference(mockPractitioner),
+      payload: [{ contentString: "Test received status" }],
+      partOf: [createReference(mockThread)],
+    };
+    await medplum.createResource(newMessage);
+
+    // Create and emit the subscription bundle
+    const bundle = await createCommunicationSubBundle(newMessage);
+    act(() => {
+      subManager.emitEventForCriteria(`Communication?part-of=Communication/test-thread`, {
+        type: "message",
+        payload: bundle,
+      });
+    });
+
+    // Verify received timestamp is set
+    await waitFor(() => {
+      const lastMessage = result.current.messages[result.current.messages.length - 1];
+      expect(lastMessage.text).toBe("Test received status");
+      expect(lastMessage.received).toBeDefined();
+      expect(lastMessage.read).toBe(false);
+    });
+  });
+
+  test("Read status is set when markMessageAsRead is called", async () => {
+    const { medplum } = await setup();
+    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    });
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Get an unread message
+    const unreadMessage = result.current.messages.find((m) => !m.read);
+    expect(unreadMessage).toBeDefined();
+
+    // Mark message as read
+    await act(async () => {
+      await result.current.markMessageAsRead(unreadMessage!.id);
+    });
+
+    // Verify message is marked as read
+    await waitFor(() => {
+      const message = result.current.messages.find((m) => m.id === unreadMessage!.id);
+      expect(message?.read).toBe(true);
+    });
+  });
+
+  test("markMessageAsRead does nothing if message is already read", async () => {
+    const { medplum } = await setup();
+
+    // Create a new message from practitioner with read status (completed)
+    const newMessage: Communication = {
+      resourceType: "Communication",
+      id: "msg-3",
+      status: "completed",
+      sent: new Date().toISOString(),
+      sender: createReference(mockPractitioner),
+      payload: [{ contentString: "Test received status" }],
+      partOf: [createReference(mockThread)],
+    };
+    await medplum.createResource(newMessage);
+
+    // Render the hook
+    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    });
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      const message = result.current.messages.find((m) => m.id === newMessage.id);
+      expect(message?.read).toBe(true);
+    });
+
+    // Mark message as read
+    await act(async () => {
+      await result.current.markMessageAsRead(newMessage.id!);
+    });
+    // Verify message is still marked as read
+    await waitFor(() => {
+      const message = result.current.messages.find((m) => m.id === newMessage.id);
+      expect(message?.read).toBe(true);
+    });
   });
 });

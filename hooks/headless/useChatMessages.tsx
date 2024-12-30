@@ -69,21 +69,44 @@ export function useBaseChatCommunications(props: BaseChatProps) {
     [profile, medplum],
   );
 
+  const updateUnreceivedMessages = useCallback(
+    async (comms: Communication[]): Promise<Communication[]> => {
+      const newComms = comms.filter((comm) => !comm.received);
+      if (newComms.length === 0) return comms;
+
+      const now = new Date().toISOString();
+      const updatedComms = await Promise.all(
+        newComms.map((comm) =>
+          medplum.patchResource("Communication", comm.id!, [
+            { op: "add", path: "/received", value: now },
+          ]),
+        ),
+      );
+
+      // Replace the original comms with updated ones
+      return comms.map((msg) => updatedComms.find((updated) => updated.id === msg.id) || msg);
+    },
+    [medplum],
+  );
+
   const fetchMessages = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
+      // Fetch messages
       const searchParams = new URLSearchParams(query);
       searchParams.append("_sort", "-sent");
-      const searchResult = await medplum.searchResources("Communication", searchParams, {
+      let searchResult = (await medplum.searchResources("Communication", searchParams, {
         cache: "no-cache",
-      });
+      })) as Communication[];
+      // Update all messages without received timestamp
+      searchResult = await updateUnreceivedMessages(searchResult);
       setAndSortCommunications(communicationsRef.current, searchResult, setCommunications);
     } catch (err) {
       onError?.(err as Error);
     } finally {
       setLoading(false);
     }
-  }, [query, medplum, setCommunications, onError]);
+  }, [query, medplum, updateUnreceivedMessages, setCommunications, onError]);
 
   // Load messages on mount
   useEffect(() => {
@@ -93,20 +116,25 @@ export function useBaseChatCommunications(props: BaseChatProps) {
   // Subscribe to new messages
   useSubscription(
     `Communication?${query}`,
-    (bundle: Bundle) => {
-      const communication = bundle.entry?.[1]?.resource as Communication;
-      setAndSortCommunications(communicationsRef.current, [communication], setCommunications);
+    async (bundle: Bundle) => {
+      let communication = bundle.entry?.[1]?.resource as Communication;
       // If we are the sender of this message, then we want to skip calling `onMessageUpdated` or `onMessageReceived`
-      if (getReferenceString(communication.sender as Reference) === profileRefStr) {
-        return;
-      }
-      // If this communication already exists, call `onMessageUpdated`
-      if (communicationsRef.current.find((c) => c.id === communication.id)) {
-        onMessageUpdated?.(communication);
-      } else {
-        // Else a new message was created
-        // Call `onMessageReceived` when we are not the sender of a chat message that came in
-        onMessageReceived?.(communication);
+      if (getReferenceString(communication.sender as Reference) !== profileRefStr) {
+        // If this communication already exists, call `onMessageUpdated`
+        if (communicationsRef.current.find((c) => c.id === communication.id)) {
+          onMessageUpdated?.(communication);
+        } else {
+          // Else a new message was created
+          // Update the communication with received timestamp
+          if (!communication.received) {
+            communication = await medplum.patchResource("Communication", communication.id!, [
+              { op: "add", path: "/received", value: new Date().toISOString() },
+            ]);
+          }
+          // Call `onMessageReceived` when we are not the sender of a chat message that came in
+          onMessageReceived?.(communication);
+        }
+        setAndSortCommunications(communicationsRef.current, [communication], setCommunications);
       }
     },
     {
@@ -170,6 +198,8 @@ export function communicationToMessage(communication: Communication): ChatMessag
       : "Practitioner") as "Patient" | "Practitioner",
     sentAt: new Date(communication.sent as string),
     messageOrder: getMessageOrder(communication),
+    received: communication.received ? new Date(communication.received) : undefined,
+    read: communication.status === "completed",
   };
 }
 
@@ -206,7 +236,7 @@ export function useChatMessages(props: ChatMessagesProps) {
 
     const newCommunication = await medplum.createResource({
       resourceType: "Communication",
-      status: "completed",
+      status: "in-progress",
       sent: new Date().toISOString(),
       sender: createReference(profile),
       payload: [
@@ -225,6 +255,19 @@ export function useChatMessages(props: ChatMessagesProps) {
     setMessage("");
   }, [message, profile, medplum, threadId, communications, setCommunications]);
 
+  const markMessageAsRead = useCallback(
+    async (messageId: string) => {
+      const message = communications.find((c) => c.id === messageId);
+      if (!message || message.status === "completed") return;
+
+      const updatedMessage = await medplum.patchResource("Communication", messageId, [
+        { op: "add", path: "/status", value: "completed" },
+      ]);
+      setAndSortCommunications(communications, [updatedMessage], setCommunications);
+    },
+    [communications, medplum, setCommunications],
+  );
+
   return {
     message,
     setMessage,
@@ -233,5 +276,6 @@ export function useChatMessages(props: ChatMessagesProps) {
     connectedOnce,
     reconnecting,
     sendMessage,
+    markMessageAsRead,
   };
 }

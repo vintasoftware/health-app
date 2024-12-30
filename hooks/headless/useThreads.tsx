@@ -1,12 +1,27 @@
 import { createReference, getReferenceString } from "@medplum/core";
-import { Bundle, Communication } from "@medplum/fhirtypes";
+import { Bundle, Communication, Patient, Practitioner, RelatedPerson } from "@medplum/fhirtypes";
 import { useMedplum, useSubscription } from "@medplum/react-hooks";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { Thread } from "@/types/chat";
 import { getQueryString } from "@/utils/url";
 
-export function communicationToThread(comm: Communication, lastMessage?: Communication): Thread {
+export function communicationToThread(
+  profile: Patient | Practitioner | RelatedPerson,
+  comm: Communication,
+  threadMessageComms: Communication[],
+): Thread {
+  const lastMessage = threadMessageComms
+    .sort((a, b) => {
+      if (!a.sent) return 1;
+      if (!b.sent) return -1;
+      return new Date(a.sent).getTime() - new Date(b.sent).getTime();
+    })
+    .reverse()?.[0];
+  const unreadCount = threadMessageComms.filter(
+    (msg) => msg.status !== "completed" && msg.sender?.reference !== getReferenceString(profile),
+  ).length;
+
   return {
     id: comm.id!,
     topic: comm.payload?.[0]?.contentString || comm.id!,
@@ -15,6 +30,7 @@ export function communicationToThread(comm: Communication, lastMessage?: Communi
     threadOrder: new Date(
       lastMessage?.sent || comm.sent || comm.meta?.lastUpdated || new Date(),
     ).getTime(),
+    unreadCount,
   };
 }
 
@@ -50,35 +66,35 @@ export function useThreads(props: ThreadsProps = {}) {
   const [connectedOnce, setConnectedOnce] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Function to fetch threads and their last messages
+  // Function to fetch threads
   const fetchThreads = useCallback(async () => {
     if (!profile) return;
 
     try {
       setLoading(true);
       const searchResults = await medplum.search("Communication", query);
-
       const threadComms = searchResults.entry
         ?.filter((e) => e.search?.mode === "match")
         .map((e) => e.resource!);
 
+      // Create a map of thread ID to messages
+      const threadMessagesMap = new Map<string, Communication[]>();
+      threadComms?.forEach((thread) => {
+        const messages = searchResults.entry
+          ?.filter(
+            (e) =>
+              e.search?.mode === "include" &&
+              e.resource?.partOf?.[0]?.reference === `Communication/${thread.id}`,
+          )
+          .map((e) => e.resource!);
+        threadMessagesMap.set(thread.id!, messages || []);
+      });
+
+      // Format Communications to type Thread
       const formattedThreads =
         threadComms?.map((comm) => {
-          const lastMessage = searchResults.entry
-            ?.filter(
-              (e) =>
-                e.search?.mode === "include" &&
-                e.resource?.partOf?.[0]?.reference === `Communication/${comm.id}`,
-            )
-            .sort((e1, e2) => {
-              if (!e1.resource?.sent) return 1;
-              if (!e2.resource?.sent) return -1;
-              return new Date(e1.resource.sent).getTime() - new Date(e2.resource.sent).getTime();
-            })
-            .reverse()?.[0]?.resource;
-          return communicationToThread(comm, lastMessage);
+          return communicationToThread(profile, comm, threadMessagesMap.get(comm.id!) || []);
         }) || [];
-
       formattedThreads.sort((a, b) => b.threadOrder - a.threadOrder);
       setThreads(formattedThreads);
     } catch (err) {
@@ -164,6 +180,7 @@ export function useThreads(props: ThreadsProps = {}) {
           id: newThread.id!,
           topic: topic.trim(),
           threadOrder: new Date().getTime(),
+          unreadCount: 0,
         },
         ...prev,
       ]);
