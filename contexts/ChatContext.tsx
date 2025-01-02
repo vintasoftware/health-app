@@ -50,20 +50,17 @@ function communicationToThread(
 async function fetchThreads({
   medplum,
   threadsQuery,
-  profile,
 }: {
   medplum: MedplumClient;
   threadsQuery: QueryTypes;
-  profile: ProfileResource;
-}): Promise<Thread[]> {
+}): Promise<{ threads: Communication[]; threadCommMap: Map<string, Communication[]> }> {
   const searchResults = await medplum.search("Communication", threadsQuery);
-  const threadComms = searchResults.entry
-    ?.filter((e) => e.search?.mode === "match")
-    .map((e) => e.resource!);
+  const threads =
+    searchResults.entry?.filter((e) => e.search?.mode === "match").map((e) => e.resource!) || [];
 
   // Create a map of thread ID to messages
-  const threadMessagesMap = new Map<string, Communication[]>();
-  threadComms?.forEach((thread) => {
+  const threadCommMap = new Map<string, Communication[]>();
+  threads.forEach((thread) => {
     const messages = searchResults.entry
       ?.filter(
         (e) =>
@@ -71,17 +68,10 @@ async function fetchThreads({
           e.resource?.partOf?.[0]?.reference === `Communication/${thread.id}`,
       )
       .map((e) => e.resource!);
-    threadMessagesMap.set(thread.id!, messages || []);
+    threadCommMap.set(thread.id!, messages || []);
   });
 
-  // Format Communications to type Thread
-  const threads =
-    threadComms?.map((comm) =>
-      communicationToThread(profile, comm, threadMessagesMap.get(comm.id!) || []),
-    ) || [];
-  threads.sort((a, b) => b.threadOrder - a.threadOrder);
-
-  return threads;
+  return { threads, threadCommMap };
 }
 
 function getMessageOrder(comm: Communication): number {
@@ -103,28 +93,27 @@ function communicationToMessage(communication: Communication): ChatMessage {
   };
 }
 
-async function updateUnreceivedMessages({
+async function updateUnreceivedCommunications({
   medplum,
-  messages,
+  communications,
 }: {
   medplum: MedplumClient;
-  messages: ChatMessage[];
-}): Promise<ChatMessage[]> {
-  const newMessages = messages.filter((comm) => !comm.received);
-  if (newMessages.length === 0) return messages;
+  communications: Communication[];
+}): Promise<Communication[]> {
+  const newComms = communications.filter((comm) => !comm.received);
+  if (newComms.length === 0) return communications;
 
   const now = new Date().toISOString();
-  const updatedMessages = (
-    await Promise.all(
-      newMessages.map((comm) =>
-        medplum.patchResource("Communication", comm.id!, [
-          { op: "add", path: "/received", value: now },
-        ]),
-      ),
-    )
-  ).map(communicationToMessage);
-
-  return messages.map((msg) => updatedMessages.find((updated) => updated.id === msg.id) || msg);
+  const updatedComms = await Promise.all(
+    newComms.map((comm) =>
+      medplum.patchResource("Communication", comm.id!, [
+        { op: "add", path: "/received", value: now },
+      ]),
+    ),
+  );
+  return communications.map(
+    (comm) => updatedComms.find((updated) => updated.id === comm.id) || comm,
+  );
 }
 
 async function fetchThreadCommunications({
@@ -204,17 +193,45 @@ interface ChatContextType {
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-export function ChatProvider({ children }: { children: React.ReactNode }) {
+interface ChatProviderProps {
+  children: React.ReactNode;
+  onError?: (error: Error) => void;
+  onWebSocketClose?: () => void;
+  onWebSocketOpen?: () => void;
+  onSubscriptionConnect?: () => void;
+}
+
+export function ChatProvider({
+  children,
+  onError,
+  onWebSocketClose,
+  onWebSocketOpen,
+  onSubscriptionConnect,
+}: ChatProviderProps) {
   const medplum = useMedplum();
   const [profile, setProfile] = useState(medplum.getProfile());
-  const [threads, setThreads] = useState<Thread[]>([]);
-  const [threadMessages, setThreadMessages] = useState<ChatMessage[]>([]);
+  const [threads, setThreads] = useState<Communication[]>([]);
+  const [threadCommMap, setThreadCommMap] = useState<Map<string, Communication[]>>(new Map());
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [reconnecting, setReconnecting] = useState(false);
   const [connectedOnce, setConnectedOnce] = useState(false);
   const [isLoadingThreads, setIsLoadingThreads] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+
+  // Threads
+  const threadsOut = useMemo(() => {
+    if (!profile) return [];
+    return threads
+      .map((thread) => communicationToThread(profile, thread, threadCommMap.get(thread.id!) || []))
+      .sort((a, b) => b.threadOrder - a.threadOrder);
+  }, [threads, profile, threadCommMap]);
+
+  // Thread messages
+  const threadMessagesOut = useMemo(() => {
+    if (!currentThreadId) return [];
+    return threadCommMap.get(currentThreadId)?.map(communicationToMessage) || [];
+  }, [currentThreadId, threadCommMap]);
 
   // Profile reference string
   const profileRefStr = useMemo<string>(
@@ -241,94 +258,116 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     [subscriptionQuery],
   );
 
-  // Function to fetch threads
+  // Function to fetch threads with error handling
   const refreshThreads = useCallback(async () => {
     if (!profile) return;
 
     try {
       setIsLoadingThreads(true);
-      const threads = await fetchThreads({ medplum, threadsQuery, profile });
+      const { threads, threadCommMap } = await fetchThreads({ medplum, threadsQuery });
       setThreads(threads);
+      setThreadCommMap(threadCommMap);
     } catch (err) {
       console.error(err);
+      onError?.(err as Error);
     } finally {
       setIsLoadingThreads(false);
     }
-  }, [medplum, profile, threadsQuery]);
+  }, [medplum, profile, threadsQuery, onError]);
 
   // Fetch communications for current thread and update received timestamp
-  const receiveThreadCommunications = useCallback(async () => {
-    if (!currentThreadId) return;
-
-    try {
-      setIsLoadingMessages(true);
-      const threadComms = await fetchThreadCommunications({ medplum, threadId: currentThreadId });
-      let updatedMessages = threadComms.map(communicationToMessage);
-      updatedMessages = await updateUnreceivedMessages({ medplum, messages: updatedMessages });
-      setThreadMessages(updatedMessages);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoadingMessages(false);
-    }
-  }, [currentThreadId, medplum]);
+  const receiveThreadCommunications = useCallback(
+    async (threadId: string) => {
+      try {
+        setIsLoadingMessages(true);
+        let threadComms = await fetchThreadCommunications({ medplum, threadId: threadId });
+        threadComms = await updateUnreceivedCommunications({
+          medplum,
+          communications: threadComms,
+        });
+        setThreadCommMap((prev) => {
+          return new Map([...prev, [threadId, threadComms]]);
+        });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    },
+    [medplum],
+  );
 
   // Subscribe to all communication changes
   useSubscription(
     `Communication?${getQueryString(subscriptionQuery)}`,
     async (bundle: Bundle) => {
-      const communication = bundle.entry?.[1]?.resource as Communication;
+      let communication = bundle.entry?.[1]?.resource as Communication;
       if (!communication) return;
 
-      // If this is a thread message (no partOf), refresh threads
+      // If this is a thread (no partOf), update thread list
       if (!communication.partOf?.length) {
-        refreshThreads();
+        setThreads((prev) => {
+          const existing = prev.find((t) => t.id === communication.id);
+          if (existing) {
+            return prev.filter((t) => t.id !== communication.id);
+          }
+          return [...prev, communication];
+        });
         return;
       }
 
-      // If this is a message for current thread, update messages
-      if (
-        currentThreadId &&
-        communication.partOf?.[0]?.reference === `Communication/${currentThreadId}`
-      ) {
-        // Update received timestamp when the sender is not the current user
-        if (
-          !communication.received &&
-          getReferenceString(communication.sender as Reference) !== profileRefStr
-        ) {
-          const newMessage = (
-            await updateUnreceivedMessages({
-              medplum,
-              messages: [communicationToMessage(communication)],
-            })
-          )[0];
+      // Else, this is a thread message, update thread messages
+      const threadId = communication.partOf?.[0]?.reference?.split("/")[1];
+      if (!threadId) return;
 
-          // Add or update the message in threadMessages
-          setThreadMessages((prev) => {
-            const existing = prev.findIndex((c) => c.id === newMessage.id);
-            if (existing !== -1) {
-              return [...prev.slice(0, existing), newMessage, ...prev.slice(existing + 1)];
-            }
-            return [...prev, newMessage];
-          });
-        }
+      // Update received timestamp when the sender is not the current user
+      if (
+        !communication.received &&
+        getReferenceString(communication.sender as Reference) !== profileRefStr
+      ) {
+        communication = (
+          await updateUnreceivedCommunications({
+            medplum,
+            communications: [communication],
+          })
+        )[0];
       }
+      setThreadCommMap((prev) => {
+        const existing = prev.get(threadId) || [];
+        return new Map([...prev, [threadId, [...existing, communication]]]);
+      });
     },
     {
       onWebSocketClose: useCallback(() => {
         if (!reconnecting) {
           setReconnecting(true);
         }
-      }, [reconnecting]),
+        onWebSocketClose?.();
+      }, [reconnecting, onWebSocketClose]),
+      onWebSocketOpen: useCallback(() => {
+        onWebSocketOpen?.();
+      }, [onWebSocketOpen]),
       onSubscriptionConnect: useCallback(() => {
         if (!connectedOnce) {
           setConnectedOnce(true);
         }
         if (reconnecting) {
-          receiveThreadCommunications();
+          const refreshPromise = refreshThreads();
+          if (currentThreadId) {
+            refreshPromise.then(() => receiveThreadCommunications(currentThreadId));
+          }
           setReconnecting(false);
         }
-      }, [connectedOnce, reconnecting, receiveThreadCommunications]),
+        onSubscriptionConnect?.();
+      }, [
+        connectedOnce,
+        reconnecting,
+        onSubscriptionConnect,
+        refreshThreads,
+        currentThreadId,
+        receiveThreadCommunications,
+      ]),
+      onError: useCallback((err: Error) => onError?.(err), [onError]),
     },
   );
 
@@ -339,8 +378,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const latestProfile = medplum.getProfile();
     if (profile?.id !== latestProfile?.id) {
       setProfile(latestProfile);
-      setThreads([]);
-      setThreadMessages([]);
+      setThreadCommMap(new Map());
       setCurrentThreadId(null);
     }
   });
@@ -353,9 +391,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   // Thread selection function
   const selectThread = useCallback(
     (threadId: string) => {
-      setThreadMessages([]);
+      setThreadCommMap(new Map());
       setCurrentThreadId(threadId);
-      receiveThreadCommunications();
+      receiveThreadCommunications(threadId);
     },
     [receiveThreadCommunications],
   );
@@ -367,7 +405,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       if (profile.resourceType !== "Patient") throw new Error("Only patients can create threads");
 
       const newThread = await createThreadCommunication({ medplum, profile, topic });
-      setThreads((prev) => [communicationToThread(profile, newThread, []), ...prev]);
+      setThreads((prev) => [...prev, newThread]);
+      setThreadCommMap((prev) => {
+        return new Map([...prev, [newThread.id!, []]]);
+      });
       return newThread.id;
     },
     [medplum, profile],
@@ -382,29 +423,48 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       message,
       threadId: currentThreadId,
     });
-    setThreadMessages((prev) => [...prev, communicationToMessage(newCommunication)]);
+    setThreadCommMap((prev) => {
+      const existing = prev.get(currentThreadId) || [];
+      return new Map([...prev, [currentThreadId, [...existing, newCommunication]]]);
+    });
     setMessage("");
   }, [message, profile, currentThreadId, medplum]);
 
   const markMessageAsRead = useCallback(
     async (messageId: string) => {
-      const message = threadMessages.find((c) => c.id === messageId);
-      if (!message || message.read) return;
+      if (!currentThreadId) {
+        console.log("No current thread");
+        return;
+      }
+      const threadComms = threadCommMap.get(currentThreadId) || [];
+      const message = threadComms.find((c) => c.id === messageId);
+      if (!message) {
+        console.log("Message already read or not found");
+        return;
+      }
+      if (message.status === "completed") {
+        console.log("Message already read");
+        return;
+      }
+      const threadId = message.partOf?.[0]?.reference?.split("/")[1];
+      if (!threadId) {
+        console.log("Thread ID not found");
+        return;
+      }
 
       const updatedCommunication = await medplum.patchResource("Communication", messageId, [
         { op: "add", path: "/status", value: "completed" },
       ]);
-      setThreadMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === messageId ? communicationToMessage(updatedCommunication) : msg,
-        ),
-      );
+      setThreadCommMap((prev) => {
+        const existing = prev.get(threadId) || [];
+        return new Map([...prev, [threadId, [...existing, updatedCommunication]]]);
+      });
     },
-    [threadMessages, medplum],
+    [currentThreadId, threadCommMap, medplum],
   );
 
   const value = {
-    threads,
+    threads: threadsOut,
     isLoadingThreads,
     isLoadingMessages,
     connectedOnce,
@@ -412,7 +472,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     createThread,
     currentThreadId,
     selectThread,
-    threadMessages,
+    threadMessages: threadMessagesOut,
     message,
     setMessage,
     sendMessage,
