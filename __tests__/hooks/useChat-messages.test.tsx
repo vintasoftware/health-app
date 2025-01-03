@@ -697,7 +697,7 @@ describe("useChat (messages)", () => {
     });
 
     // Get an unread message
-    const unreadMessage = result.current.threadMessages.find((m) => !m.read);
+    const unreadMessage = result.current.threadMessages.find((m) => m.id === "msg-2");
     expect(unreadMessage).toBeDefined();
 
     // Mark message as read
@@ -748,10 +748,41 @@ describe("useChat (messages)", () => {
     await act(async () => {
       await result.current.markMessageAsRead(newMessage.id!);
     });
+
     // Verify message is still marked as read
     await waitFor(() => {
       const message = result.current.threadMessages.find((m) => m.id === newMessage.id);
       expect(message?.read).toBe(true);
+    });
+  });
+
+  test("markMessageAsRead does nothing if message is outgoing", async () => {
+    const { medplum } = await setup();
+
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
+    });
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(result.current.isLoadingMessages).toBe(false);
+    });
+
+    // Try to mark an outgoing message as read
+    const unreadMessage = result.current.threadMessages.find((m) => m.id === "msg-1");
+    await act(async () => {
+      await result.current.markMessageAsRead(unreadMessage!.id);
+    });
+
+    // Verify message is still marked as not read
+    await waitFor(() => {
+      const message = result.current.threadMessages.find((m) => m.id === unreadMessage!.id);
+      expect(message?.read).toBe(false);
     });
   });
 });

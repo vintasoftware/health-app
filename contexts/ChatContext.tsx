@@ -446,35 +446,34 @@ export function ChatProvider({
 
   const markMessageAsRead = useCallback(
     async (messageId: string) => {
-      if (!currentThreadId) {
-        console.warn("No current thread");
-        return;
-      }
+      // Check if the current thread is loaded
+      if (!currentThreadId) return;
+
+      // Get the message
       const threadComms = threadCommMap.get(currentThreadId) || [];
       const message = threadComms.find((c) => c.id === messageId);
-      if (!message) {
-        console.warn("Message already read or not found");
-        return;
-      }
-      if (message.status === "completed") {
-        console.warn("Message already read");
-        return;
-      }
-      const threadId = message.partOf?.[0]?.reference?.split("/")[1];
-      if (!threadId) {
-        console.warn("Thread ID not found");
-        return;
-      }
+      if (!message) return;
 
+      // Check if the message is already read
+      if (message.status === "completed") return;
+
+      // Check if the message is outgoing
+      const isOutgoing = getReferenceString(message.sender as Reference) === profileRefStr;
+      if (isOutgoing) return;
+
+      // Mark the message as read
       const updatedCommunication = await medplum.patchResource("Communication", messageId, [
         { op: "add", path: "/status", value: "completed" },
       ]);
       setThreadCommMap((prev) => {
-        const existing = prev.get(threadId) || [];
-        return new Map([...prev, [threadId, upsertObjectArray(existing, updatedCommunication)]]);
+        const existing = prev.get(currentThreadId) || [];
+        return new Map([
+          ...prev,
+          [currentThreadId, upsertObjectArray(existing, updatedCommunication)],
+        ]);
       });
     },
-    [currentThreadId, threadCommMap, medplum],
+    [currentThreadId, threadCommMap, medplum, profileRefStr],
   );
 
   const value = {
