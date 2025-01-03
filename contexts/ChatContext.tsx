@@ -17,7 +17,7 @@ import { useMedplum, useSubscription } from "@medplum/react-hooks";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import type { ChatMessage, Thread } from "@/types/chat";
-import { upsertObjectArray } from "@/utils/array";
+import { syncResourceArray } from "@/utils/array";
 import { getQueryString } from "@/utils/url";
 
 function communicationToThread(
@@ -321,7 +321,7 @@ export function ChatProvider({
 
       // If this is a thread (no partOf), update thread list
       if (!communication.partOf?.length) {
-        setThreads((prev) => upsertObjectArray(prev, communication));
+        setThreads((prev) => syncResourceArray(prev, communication));
         return;
       }
 
@@ -348,7 +348,7 @@ export function ChatProvider({
         } else if (isIncoming) {
           onMessageReceived?.(communication);
         }
-        return new Map([...prev, [threadId, upsertObjectArray(existing, communication)]]);
+        return new Map([...prev, [threadId, syncResourceArray(existing, communication)]]);
       });
     },
     {
@@ -439,7 +439,7 @@ export function ChatProvider({
     });
     setThreadCommMap((prev) => {
       const existing = prev.get(currentThreadId) || [];
-      return new Map([...prev, [currentThreadId, upsertObjectArray(existing, newCommunication)]]);
+      return new Map([...prev, [currentThreadId, syncResourceArray(existing, newCommunication)]]);
     });
     setMessage("");
   }, [message, profile, currentThreadId, medplum]);
@@ -469,7 +469,7 @@ export function ChatProvider({
         const existing = prev.get(currentThreadId) || [];
         return new Map([
           ...prev,
-          [currentThreadId, upsertObjectArray(existing, updatedCommunication)],
+          [currentThreadId, syncResourceArray(existing, updatedCommunication)],
         ]);
       });
     },
