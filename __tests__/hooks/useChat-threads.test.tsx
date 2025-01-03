@@ -86,7 +86,7 @@ async function createCommunicationSubBundle(communication: Communication): Promi
   };
 }
 
-describe("useThreads", () => {
+describe("useChat (threads)", () => {
   async function setup(
     profile: Patient | Practitioner = mockPatient,
   ): Promise<{ medplum: MockClient; subManager: MockSubscriptionManager }> {
@@ -118,13 +118,22 @@ describe("useThreads", () => {
       onSubscriptionConnect: () => void;
     }> = {},
   ) {
-    return ({ children }: { children: React.ReactNode }) => (
+    const TestWrapper = ({ children }: { children: React.ReactNode }) => (
       <MedplumProvider medplum={medplum}>
         <ChatProvider {...props}>{children}</ChatProvider>
       </MedplumProvider>
     );
+    return TestWrapper;
   }
 
+  // Subscription criteria
+  const criteria = getQueryString({
+    "part-of:missing": true,
+    subject: getReferenceString(mockPatient),
+    _revinclude: "Communication:part-of",
+  });
+
+  // Test cases:
   test("Loads and displays threads for patient", async () => {
     const { medplum } = await setup();
     const searchSpy = jest.spyOn(medplum, "search");
@@ -460,11 +469,6 @@ describe("useThreads", () => {
     });
 
     // Emit that subscription is connected
-    const criteria = getQueryString({
-      "part-of:missing": true,
-      subject: getReferenceString(mockPatient),
-      _revinclude: "Communication:part-of",
-    });
     act(() => {
       subManager.emitEventForCriteria(`Communication?${criteria}`, {
         type: "connect",
@@ -659,11 +663,6 @@ describe("useThreads", () => {
     expect(result.current.threads.find((t) => t.id === "thread-new")).toBeUndefined();
 
     // Emit subscription connected event
-    const criteria = getQueryString({
-      "part-of:missing": true,
-      subject: getReferenceString(mockPatient),
-      _revinclude: "Communication:part-of",
-    });
     act(() => {
       subManager.emitEventForCriteria(`Communication?${criteria}`, {
         type: "connect",
@@ -700,11 +699,6 @@ describe("useThreads", () => {
     });
 
     // Emit error event on subscription
-    const criteria = getQueryString({
-      "part-of:missing": true,
-      subject: getReferenceString(mockPatient),
-      _revinclude: "Communication:part-of",
-    });
     act(() => {
       subManager.emitEventForCriteria(`Communication?${criteria}`, {
         type: "error",

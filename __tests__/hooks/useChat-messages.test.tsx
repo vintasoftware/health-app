@@ -1,10 +1,11 @@
-import { createReference, generateId, getWebSocketUrl } from "@medplum/core";
+import { createReference, generateId, getReferenceString, getWebSocketUrl } from "@medplum/core";
 import { Bundle, Communication, Patient, Practitioner } from "@medplum/fhirtypes";
 import { MockClient, MockSubscriptionManager } from "@medplum/mock";
 import { MedplumProvider } from "@medplum/react-hooks";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 
-import { useChatMessages } from "@/hooks/headless/useChatMessages";
+import { ChatProvider, useChat } from "@/contexts/ChatContext";
+import { getQueryString } from "@/utils/url";
 
 const mockPatient: Patient = {
   resourceType: "Patient",
@@ -77,7 +78,7 @@ async function createCommunicationSubBundle(communication: Communication): Promi
   };
 }
 
-describe("useChatMessages", () => {
+describe("useChat (messages)", () => {
   async function setup(): Promise<{ medplum: MockClient; subManager: MockSubscriptionManager }> {
     const medplum = new MockClient({ profile: mockPatient });
     const subManager = new MockSubscriptionManager(
@@ -96,40 +97,78 @@ describe("useChatMessages", () => {
     return { medplum, subManager };
   }
 
+  // Helper function to create wrapper with both providers
+  function createWrapper(
+    medplum: MockClient,
+    props: Partial<{
+      onMessageReceived: (message: Communication) => void;
+      onMessageUpdated: (message: Communication) => void;
+      onWebSocketClose: () => void;
+      onWebSocketOpen: () => void;
+      onSubscriptionConnect: () => void;
+      onError: (error: Error) => void;
+    }> = {},
+  ) {
+    const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+      <MedplumProvider medplum={medplum}>
+        <ChatProvider {...props}>{children}</ChatProvider>
+      </MedplumProvider>
+    );
+    return TestWrapper;
+  }
+
+  // Subscription criteria
+  const criteria = getQueryString({
+    "part-of:missing": true,
+    subject: getReferenceString(mockPatient),
+    _revinclude: "Communication:part-of",
+  });
+
+  // Test cases:
   test("Loads and displays messages", async () => {
     const { medplum } = await setup();
 
-    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
-      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
     });
 
     // Initially should be loading
-    expect(result.current.loading).toBe(true);
+    expect(result.current.isLoadingMessages).toBe(true);
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Check messages are displayed
-    expect(result.current.messages).toHaveLength(2);
-    expect(result.current.messages[0].text).toBe("Hello");
-    expect(result.current.messages[0].senderType).toBe("Patient");
-    expect(result.current.messages[1].text).toBe("Hi there");
-    expect(result.current.messages[1].senderType).toBe("Practitioner");
+    expect(result.current.threadMessages).toHaveLength(2);
+    expect(result.current.threadMessages[0].text).toBe("Hello");
+    expect(result.current.threadMessages[0].senderType).toBe("Patient");
+    expect(result.current.threadMessages[1].text).toBe("Hi there");
+    expect(result.current.threadMessages[1].senderType).toBe("Practitioner");
   });
 
   test("Sends new message", async () => {
     const { medplum } = await setup();
     const createSpy = jest.spyOn(medplum, "createResource");
 
-    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
-      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
     });
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Set message and send
@@ -159,25 +198,30 @@ describe("useChatMessages", () => {
 
     // Wait for messages to update
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Verify the new message appears in the list
-    expect(result.current.messages[2].text).toBe("New message");
-    expect(result.current.messages[2].senderType).toBe("Patient");
+    expect(result.current.threadMessages[2].text).toBe("New message");
+    expect(result.current.threadMessages[2].senderType).toBe("Patient");
   });
 
   test("Does not send empty message", async () => {
     const { medplum } = await setup();
     const createSpy = jest.spyOn(medplum, "createResource");
 
-    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
-      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
     });
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     await act(async () => {
@@ -190,21 +234,23 @@ describe("useChatMessages", () => {
   test("Handles real-time message incoming", async () => {
     const onMessageReceivedMock = jest.fn();
     const { medplum, subManager } = await setup();
-    const { result } = renderHook(
-      () => useChatMessages({ threadId: "test-thread", onMessageReceived: onMessageReceivedMock }),
-      {
-        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
-      },
-    );
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum, { onMessageReceived: onMessageReceivedMock }),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
+    });
 
     // Wait for initial load
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Emit that subscription is connected
     act(() => {
-      subManager.emitEventForCriteria(`Communication?part-of=Communication/test-thread`, {
+      subManager.emitEventForCriteria(`Communication?${criteria}`, {
         type: "connect",
         payload: { subscriptionId: generateId() },
       });
@@ -232,7 +278,7 @@ describe("useChatMessages", () => {
     // Create and emit the subscription bundle
     const bundle = await createCommunicationSubBundle(newMessage);
     act(() => {
-      subManager.emitEventForCriteria(`Communication?part-of=Communication/test-thread`, {
+      subManager.emitEventForCriteria(`Communication?${criteria}`, {
         type: "message",
         payload: bundle,
       });
@@ -240,8 +286,8 @@ describe("useChatMessages", () => {
 
     // Verify the new message appears in real-time
     await waitFor(() => {
-      expect(result.current.messages).toHaveLength(3);
-      expect(result.current.messages[2].text).toBe("Real-time incoming message");
+      expect(result.current.threadMessages).toHaveLength(3);
+      expect(result.current.threadMessages[2].text).toBe("Real-time incoming message");
     });
 
     // Verify the onMessageReceived callback was called
@@ -252,16 +298,18 @@ describe("useChatMessages", () => {
   test("Ignores outgoing new message on subscription", async () => {
     const onMessageReceivedMock = jest.fn();
     const { medplum, subManager } = await setup();
-    const { result } = renderHook(
-      () => useChatMessages({ threadId: "test-thread", onMessageReceived: onMessageReceivedMock }),
-      {
-        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
-      },
-    );
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum, { onMessageReceived: onMessageReceivedMock }),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
+    });
 
     // Wait for initial load
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Create a new message
@@ -278,7 +326,7 @@ describe("useChatMessages", () => {
     // Create and emit the subscription bundle
     const bundle = await createCommunicationSubBundle(newMessage);
     act(() => {
-      subManager.emitEventForCriteria(`Communication?part-of=Communication/test-thread`, {
+      subManager.emitEventForCriteria(`Communication?${criteria}`, {
         type: "message",
         payload: bundle,
       });
@@ -291,16 +339,18 @@ describe("useChatMessages", () => {
   test("Updates existing message when receiving update via subscription", async () => {
     const onMessageUpdatedMock = jest.fn();
     const { medplum, subManager } = await setup();
-    const { result } = renderHook(
-      () => useChatMessages({ threadId: "test-thread", onMessageUpdated: onMessageUpdatedMock }),
-      {
-        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
-      },
-    );
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum, { onMessageUpdated: onMessageUpdatedMock }),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
+    });
 
     // Wait for initial load
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Update an existing message
@@ -315,7 +365,7 @@ describe("useChatMessages", () => {
     // Create and emit the subscription bundle
     const bundle = await createCommunicationSubBundle(updatedMessage);
     act(() => {
-      subManager.emitEventForCriteria(`Communication?part-of=Communication/test-thread`, {
+      subManager.emitEventForCriteria(`Communication?${criteria}`, {
         type: "message",
         payload: bundle,
       });
@@ -323,8 +373,8 @@ describe("useChatMessages", () => {
 
     // Verify the message was updated
     await waitFor(() => {
-      expect(result.current.messages[1].text).toBe("Updated message");
-      expect(result.current.messages).toHaveLength(2);
+      expect(result.current.threadMessages[1].text).toBe("Updated message");
+      expect(result.current.threadMessages).toHaveLength(2);
     });
 
     // Verify the onMessageUpdated callback was called
@@ -339,19 +389,24 @@ describe("useChatMessages", () => {
       name: [{ given: ["Jane"], family: "Doe" }],
     };
     const { medplum } = await setup();
-    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
-      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
     });
 
     // Wait for initial load
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Verify initial messages are loaded
-    expect(result.current.messages).toHaveLength(2);
-    expect(result.current.messages[0].text).toBe("Hello");
-    expect(result.current.messages[1].text).toBe("Hi there");
+    expect(result.current.threadMessages).toHaveLength(2);
+    expect(result.current.threadMessages[0].text).toBe("Hello");
+    expect(result.current.threadMessages[1].text).toBe("Hi there");
 
     // Change the profile
     await act(async () => {
@@ -360,11 +415,11 @@ describe("useChatMessages", () => {
 
     // Wait for loading to complete with new profile
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Verify messages are cleared
-    expect(result.current.messages).toHaveLength(0);
+    expect(result.current.threadMessages).toHaveLength(0);
   });
 
   test("Handles WebSocket disconnection and reconnection", async () => {
@@ -372,22 +427,22 @@ describe("useChatMessages", () => {
     const onWebSocketOpenMock = jest.fn();
     const onSubscriptionConnectMock = jest.fn();
     const { medplum, subManager } = await setup();
-    const { result } = renderHook(
-      () =>
-        useChatMessages({
-          threadId: "test-thread",
-          onWebSocketClose: onWebSocketCloseMock,
-          onWebSocketOpen: onWebSocketOpenMock,
-          onSubscriptionConnect: onSubscriptionConnectMock,
-        }),
-      {
-        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
-      },
-    );
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum, {
+        onWebSocketClose: onWebSocketCloseMock,
+        onWebSocketOpen: onWebSocketOpenMock,
+        onSubscriptionConnect: onSubscriptionConnectMock,
+      }),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
+    });
 
     // Wait for initial load
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Simulate WebSocket disconnection
@@ -424,11 +479,11 @@ describe("useChatMessages", () => {
     expect(onWebSocketOpenMock).toHaveBeenCalledTimes(1);
 
     // New message should not be in chat yet
-    expect(result.current.messages).not.toHaveLength(3);
+    expect(result.current.threadMessages).not.toHaveLength(3);
 
     // Emit subscription connected event
     act(() => {
-      subManager.emitEventForCriteria(`Communication?part-of=Communication/test-thread`, {
+      subManager.emitEventForCriteria(`Communication?${criteria}`, {
         type: "connect",
         payload: { subscriptionId: generateId() },
       });
@@ -442,32 +497,29 @@ describe("useChatMessages", () => {
 
     // Wait for reconnection and message refresh
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.messages).toHaveLength(3);
+      expect(result.current.isLoadingMessages).toBe(false);
+      expect(result.current.threadMessages).toHaveLength(3);
     });
 
     // Verify the new message was fetched after reconnection
-    expect(result.current.messages[2].text).toBe("Message while disconnected");
+    expect(result.current.threadMessages[2].text).toBe("Message while disconnected");
   });
 
   test("Calls onError callback when subscription error occurs", async () => {
     const onErrorMock = jest.fn();
     const { medplum, subManager } = await setup();
-    const { result } = renderHook(
-      () => useChatMessages({ threadId: "test-thread", onError: onErrorMock }),
-      {
-        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
-      },
-    );
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum, { onError: onErrorMock }),
+    });
 
     // Wait for initial load
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Emit error event on subscription
     act(() => {
-      subManager.emitEventForCriteria(`Communication?part-of=Communication/test-thread`, {
+      subManager.emitEventForCriteria(`Communication?${criteria}`, {
         type: "error",
         payload: new Error("Subscription error occurred"),
       });
@@ -487,23 +539,21 @@ describe("useChatMessages", () => {
     const error = new Error("Failed to load messages");
     searchSpy.mockRejectedValue(error);
 
-    const { result } = renderHook(
-      () =>
-        useChatMessages({
-          threadId: "test-thread",
-          onError: onErrorMock,
-        }),
-      {
-        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
-      },
-    );
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum, { onError: onErrorMock }),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
+    });
 
     // Initially should be loading
-    expect(result.current.loading).toBe(true);
+    expect(result.current.isLoadingMessages).toBe(true);
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Verify the onError callback was called with the error
@@ -511,27 +561,36 @@ describe("useChatMessages", () => {
     expect(onErrorMock).toHaveBeenCalledTimes(1);
 
     // Verify no messages were loaded
-    expect(result.current.messages).toHaveLength(0);
+    expect(result.current.threadMessages).toHaveLength(0);
   });
 
   test("New message starts with sent status only", async () => {
     const { medplum } = await setup();
-    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
-      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
+    });
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Send a new message
     act(() => {
       result.current.setMessage("New message");
     });
-
     await act(async () => {
       await result.current.sendMessage();
     });
 
     // Wait for messages to update
     await waitFor(() => {
-      const lastMessage = result.current.messages[result.current.messages.length - 1];
+      const lastMessage = result.current.threadMessages[result.current.threadMessages.length - 1];
       expect(lastMessage.sentAt).toBeDefined();
       expect(lastMessage.received).toBeUndefined();
       expect(lastMessage.read).toBe(false);
@@ -553,18 +612,23 @@ describe("useChatMessages", () => {
     };
     await medplum.createResource(newMessage);
 
-    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
-      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
     });
 
     // Wait for initial load
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Verify the message in the list has received status
     await waitFor(() => {
-      const message = result.current.messages.find((m) => m.id === "msg-3");
+      const message = result.current.threadMessages.find((m) => m.id === "msg-3");
       expect(message?.received).toBeDefined();
       expect(message?.read).toBe(false);
     });
@@ -572,13 +636,18 @@ describe("useChatMessages", () => {
 
   test("Received status is set when message is received by other user", async () => {
     const { medplum, subManager } = await setup();
-    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
-      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
     });
 
     // Wait for initial load
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Create a new incoming message without received status
@@ -596,7 +665,7 @@ describe("useChatMessages", () => {
     // Create and emit the subscription bundle
     const bundle = await createCommunicationSubBundle(newMessage);
     act(() => {
-      subManager.emitEventForCriteria(`Communication?part-of=Communication/test-thread`, {
+      subManager.emitEventForCriteria(`Communication?${criteria}`, {
         type: "message",
         payload: bundle,
       });
@@ -604,7 +673,7 @@ describe("useChatMessages", () => {
 
     // Verify received timestamp is set
     await waitFor(() => {
-      const lastMessage = result.current.messages[result.current.messages.length - 1];
+      const lastMessage = result.current.threadMessages[result.current.threadMessages.length - 1];
       expect(lastMessage.text).toBe("Test received status");
       expect(lastMessage.received).toBeDefined();
       expect(lastMessage.read).toBe(false);
@@ -613,17 +682,22 @@ describe("useChatMessages", () => {
 
   test("Read status is set when markMessageAsRead is called", async () => {
     const { medplum } = await setup();
-    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
-      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
     });
 
     // Wait for initial load
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoadingMessages).toBe(false);
     });
 
     // Get an unread message
-    const unreadMessage = result.current.messages.find((m) => !m.read);
+    const unreadMessage = result.current.threadMessages.find((m) => !m.read);
     expect(unreadMessage).toBeDefined();
 
     // Mark message as read
@@ -633,7 +707,7 @@ describe("useChatMessages", () => {
 
     // Verify message is marked as read
     await waitFor(() => {
-      const message = result.current.messages.find((m) => m.id === unreadMessage!.id);
+      const message = result.current.threadMessages.find((m) => m.id === unreadMessage!.id);
       expect(message?.read).toBe(true);
     });
   });
@@ -654,14 +728,19 @@ describe("useChatMessages", () => {
     await medplum.createResource(newMessage);
 
     // Render the hook
-    const { result } = renderHook(() => useChatMessages({ threadId: "test-thread" }), {
-      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    const { result } = renderHook(() => useChat(), {
+      wrapper: createWrapper(medplum),
+    });
+
+    // Select the thread
+    act(() => {
+      result.current.selectThread("test-thread");
     });
 
     // Wait for initial load
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      const message = result.current.messages.find((m) => m.id === newMessage.id);
+      expect(result.current.isLoadingMessages).toBe(false);
+      const message = result.current.threadMessages.find((m) => m.id === newMessage.id);
       expect(message?.read).toBe(true);
     });
 
@@ -671,7 +750,7 @@ describe("useChatMessages", () => {
     });
     // Verify message is still marked as read
     await waitFor(() => {
-      const message = result.current.messages.find((m) => m.id === newMessage.id);
+      const message = result.current.threadMessages.find((m) => m.id === newMessage.id);
       expect(message?.read).toBe(true);
     });
   });

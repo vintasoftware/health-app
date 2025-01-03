@@ -17,6 +17,7 @@ import { useMedplum, useSubscription } from "@medplum/react-hooks";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import type { ChatMessage, Thread } from "@/types/chat";
+import { upsertObjectArray } from "@/utils/array";
 import { getQueryString } from "@/utils/url";
 
 function communicationToThread(
@@ -123,10 +124,16 @@ async function fetchThreadCommunications({
   medplum: MedplumClient;
   threadId: string;
 }): Promise<Communication[]> {
-  return await medplum.searchResources("Communication", {
-    "part-of": `Communication/${threadId}`,
-    _sort: "-sent",
-  });
+  return await medplum.searchResources(
+    "Communication",
+    {
+      "part-of": `Communication/${threadId}`,
+      _sort: "-sent",
+    },
+    {
+      cache: "no-cache",
+    },
+  );
 }
 
 async function createThreadCommunication({
@@ -195,18 +202,22 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 interface ChatProviderProps {
   children: React.ReactNode;
-  onError?: (error: Error) => void;
+  onMessageReceived?: (message: Communication) => void;
+  onMessageUpdated?: (message: Communication) => void;
   onWebSocketClose?: () => void;
   onWebSocketOpen?: () => void;
   onSubscriptionConnect?: () => void;
+  onError?: (error: Error) => void;
 }
 
 export function ChatProvider({
   children,
-  onError,
+  onMessageReceived,
+  onMessageUpdated,
   onWebSocketClose,
   onWebSocketOpen,
   onSubscriptionConnect,
+  onError,
 }: ChatProviderProps) {
   const medplum = useMedplum();
   const [profile, setProfile] = useState(medplum.getProfile());
@@ -230,7 +241,12 @@ export function ChatProvider({
   // Thread messages
   const threadMessagesOut = useMemo(() => {
     if (!currentThreadId) return [];
-    return threadCommMap.get(currentThreadId)?.map(communicationToMessage) || [];
+    return (
+      threadCommMap
+        .get(currentThreadId)
+        ?.map(communicationToMessage)
+        .sort((a, b) => a.messageOrder - b.messageOrder) || []
+    );
   }, [currentThreadId, threadCommMap]);
 
   // Profile reference string
@@ -268,7 +284,6 @@ export function ChatProvider({
       setThreads(threads);
       setThreadCommMap(threadCommMap);
     } catch (err) {
-      console.error(err);
       onError?.(err as Error);
     } finally {
       setIsLoadingThreads(false);
@@ -289,12 +304,12 @@ export function ChatProvider({
           return new Map([...prev, [threadId, threadComms]]);
         });
       } catch (err) {
-        console.error(err);
+        onError?.(err as Error);
       } finally {
         setIsLoadingMessages(false);
       }
     },
-    [medplum],
+    [medplum, onError],
   );
 
   // Subscribe to all communication changes
@@ -306,25 +321,17 @@ export function ChatProvider({
 
       // If this is a thread (no partOf), update thread list
       if (!communication.partOf?.length) {
-        setThreads((prev) => {
-          const existing = prev.find((t) => t.id === communication.id);
-          if (existing) {
-            return prev.filter((t) => t.id !== communication.id);
-          }
-          return [...prev, communication];
-        });
+        setThreads((prev) => upsertObjectArray(prev, communication));
         return;
       }
 
-      // Else, this is a thread message, update thread messages
+      // Else, this is a thread message
       const threadId = communication.partOf?.[0]?.reference?.split("/")[1];
       if (!threadId) return;
 
       // Update received timestamp when the sender is not the current user
-      if (
-        !communication.received &&
-        getReferenceString(communication.sender as Reference) !== profileRefStr
-      ) {
+      const isIncoming = getReferenceString(communication.sender as Reference) !== profileRefStr;
+      if (isIncoming && !communication.received) {
         communication = (
           await updateUnreceivedCommunications({
             medplum,
@@ -332,9 +339,16 @@ export function ChatProvider({
           })
         )[0];
       }
+
+      // Update the thread messages
       setThreadCommMap((prev) => {
         const existing = prev.get(threadId) || [];
-        return new Map([...prev, [threadId, [...existing, communication]]]);
+        if (existing.length && existing.find((c) => c.id === communication.id)) {
+          onMessageUpdated?.(communication);
+        } else if (isIncoming) {
+          onMessageReceived?.(communication);
+        }
+        return new Map([...prev, [threadId, upsertObjectArray(existing, communication)]]);
       });
     },
     {
@@ -425,7 +439,7 @@ export function ChatProvider({
     });
     setThreadCommMap((prev) => {
       const existing = prev.get(currentThreadId) || [];
-      return new Map([...prev, [currentThreadId, [...existing, newCommunication]]]);
+      return new Map([...prev, [currentThreadId, upsertObjectArray(existing, newCommunication)]]);
     });
     setMessage("");
   }, [message, profile, currentThreadId, medplum]);
@@ -433,22 +447,22 @@ export function ChatProvider({
   const markMessageAsRead = useCallback(
     async (messageId: string) => {
       if (!currentThreadId) {
-        console.log("No current thread");
+        console.warn("No current thread");
         return;
       }
       const threadComms = threadCommMap.get(currentThreadId) || [];
       const message = threadComms.find((c) => c.id === messageId);
       if (!message) {
-        console.log("Message already read or not found");
+        console.warn("Message already read or not found");
         return;
       }
       if (message.status === "completed") {
-        console.log("Message already read");
+        console.warn("Message already read");
         return;
       }
       const threadId = message.partOf?.[0]?.reference?.split("/")[1];
       if (!threadId) {
-        console.log("Thread ID not found");
+        console.warn("Thread ID not found");
         return;
       }
 
@@ -457,7 +471,7 @@ export function ChatProvider({
       ]);
       setThreadCommMap((prev) => {
         const existing = prev.get(threadId) || [];
-        return new Map([...prev, [threadId, [...existing, updatedCommunication]]]);
+        return new Map([...prev, [threadId, upsertObjectArray(existing, updatedCommunication)]]);
       });
     },
     [currentThreadId, threadCommMap, medplum],
