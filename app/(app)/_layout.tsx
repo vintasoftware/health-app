@@ -3,6 +3,7 @@ import { Redirect, Slot } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Spinner } from "@/components/ui/spinner";
+import { ChatProvider } from "@/contexts/ChatContext";
 
 export default function AppLayout() {
   const medplum = useMedplum();
@@ -21,5 +22,9 @@ export default function AppLayout() {
     return <Redirect href="/sign-in" />;
   }
 
-  return <Slot />;
+  return (
+    <ChatProvider>
+      <Slot />
+    </ChatProvider>
+  );
 }
