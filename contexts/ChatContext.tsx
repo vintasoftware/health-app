@@ -405,7 +405,6 @@ export function ChatProvider({
   // Thread selection function
   const selectThread = useCallback(
     (threadId: string) => {
-      setThreadCommMap(new Map());
       setCurrentThreadId(threadId);
       receiveThreadCommunications(threadId);
     },
