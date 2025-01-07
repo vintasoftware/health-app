@@ -1,3 +1,4 @@
+import { useMedplum } from "@medplum/react-hooks";
 import { EllipsisVerticalIcon, PlusIcon } from "lucide-react-native";
 import { useState } from "react";
 
@@ -14,6 +15,8 @@ interface ThreadListHeaderProps {
 }
 
 export function ThreadListHeader({ onLogout, onCreateThread }: ThreadListHeaderProps) {
+  const medplum = useMedplum();
+  const isPatient = medplum.getProfile()?.resourceType === "Patient";
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   return (
@@ -23,10 +26,12 @@ export function ThreadListHeader({ onLogout, onCreateThread }: ThreadListHeaderP
       </Text>
 
       <View className="flex-row items-center gap-2">
-        <Button variant="outline" action="primary" size="sm" onPress={onCreateThread}>
-          <ButtonIcon as={PlusIcon} size="sm" />
-          <ButtonText>New Thread</ButtonText>
-        </Button>
+        {isPatient && onCreateThread && (
+          <Button variant="outline" action="primary" size="sm" onPress={onCreateThread}>
+            <ButtonIcon as={PlusIcon} size="sm" />
+            <ButtonText>New Thread</ButtonText>
+          </Button>
+        )}
 
         <Popover
           onClose={() => setIsMenuVisible(false)}

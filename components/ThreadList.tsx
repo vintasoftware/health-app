@@ -45,9 +45,7 @@ function ThreadItem({
                 </View>
               )}
             </View>
-            <Text className="text-sm text-typography-600" numberOfLines={1}>
-              {thread.lastMessage}
-            </Text>
+            <Text className="text-sm text-typography-600">{thread.lastMessage}</Text>
           </View>
 
           <Text className="text-xs text-typography-500">

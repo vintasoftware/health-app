@@ -2,11 +2,13 @@ import { useMedplum } from "@medplum/react-hooks";
 import { Redirect, Slot } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { PractitionerBanner } from "@/components/PractitionerBanner";
 import { Spinner } from "@/components/ui/spinner";
 import { ChatProvider } from "@/contexts/ChatContext";
 
 export default function AppLayout() {
   const medplum = useMedplum();
+  const isPractitioner = medplum.getProfile()?.resourceType === "Practitioner";
 
   if (medplum.isLoading()) {
     return (
@@ -24,6 +26,7 @@ export default function AppLayout() {
 
   return (
     <ChatProvider>
+      {isPractitioner && <PractitionerBanner />}
       <Slot />
     </ChatProvider>
   );

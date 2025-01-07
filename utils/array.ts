@@ -17,6 +17,7 @@ export const syncResourceArray = <T extends Resource>(arr: T[], obj: T): T[] => 
     ) {
       return [...arr.slice(0, existingIndex), obj, ...arr.slice(existingIndex + 1)];
     }
+    return arr;
   }
   return [...arr, obj];
 };
