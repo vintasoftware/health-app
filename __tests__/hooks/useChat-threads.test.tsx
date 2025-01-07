@@ -25,6 +25,7 @@ const mockThread1: Communication = {
   status: "completed",
   sent: "2024-01-01T12:00:00Z",
   payload: [{ contentString: "Thread 1 Topic" }],
+  extension: [{ url: "https://medplum.com/last-changed", valueDateTime: "2024-01-01T12:00:00Z" }],
 };
 
 const mockMessage1: Communication = {
@@ -53,6 +54,7 @@ const mockThread2: Communication = {
   status: "completed",
   sent: "2024-01-02T12:00:00Z",
   payload: [{ contentString: "Thread 2 Topic" }],
+  extension: [{ url: "https://medplum.com/last-changed", valueDateTime: "2024-01-02T12:00:00Z" }],
 };
 
 async function createCommunicationSubBundle(communication: Communication): Promise<Bundle> {
@@ -80,7 +82,7 @@ async function createCommunicationSubBundle(communication: Communication): Promi
       },
       {
         resource: communication,
-        fullUrl: `https://api.medplum.com/fhir/R4/Communication/${communication.id as string}`,
+        fullUrl: `https://api.medplum.com/fhir/R4/Communication/${communication.id!}`,
       },
     ],
   };
@@ -130,7 +132,6 @@ describe("useChat (threads)", () => {
   const criteria = getQueryString({
     "part-of:missing": true,
     subject: getReferenceString(mockPatient),
-    _revinclude: "Communication:part-of",
   });
 
   // Test cases:
@@ -336,7 +337,7 @@ describe("useChat (threads)", () => {
       status: "completed",
       sent: "2024-01-01T12:00:00Z",
       payload: [{ contentString: "Thread 1" }],
-    } as Communication;
+    } satisfies Communication;
 
     const thread1Message = {
       resourceType: "Communication",
@@ -346,7 +347,7 @@ describe("useChat (threads)", () => {
       sender: createReference(mockPatient),
       payload: [{ contentString: "Message in thread 1" }],
       partOf: [{ reference: "Communication/thread-1" }],
-    } as Communication;
+    } satisfies Communication;
 
     const thread2 = {
       resourceType: "Communication",
@@ -354,7 +355,7 @@ describe("useChat (threads)", () => {
       status: "completed",
       sent: "2024-01-01T13:00:00Z", // Last activity for thread 2 (no messages)
       payload: [{ contentString: "Thread 2" }],
-    } as Communication;
+    } satisfies Communication;
 
     const thread3 = {
       resourceType: "Communication",
@@ -362,7 +363,7 @@ describe("useChat (threads)", () => {
       status: "completed",
       sent: "2024-01-01T12:00:00Z",
       payload: [{ contentString: "Thread 3" }],
-    } as Communication;
+    } satisfies Communication;
 
     const thread3Message = {
       resourceType: "Communication",
@@ -372,7 +373,7 @@ describe("useChat (threads)", () => {
       sender: createReference(mockPatient),
       payload: [{ contentString: "Message in thread 3" }],
       partOf: [{ reference: "Communication/thread-3" }],
-    } as Communication;
+    } satisfies Communication;
 
     // Mock search results with specific order
     searchSpy.mockResolvedValue({
@@ -495,36 +496,28 @@ describe("useChat (threads)", () => {
     // Create the resource and wait for it to be saved
     await medplum.createResource(newMessage);
 
-    // Mock the search implementation to return the new message
+    // Mock the search implementation for messages of thread 1
     searchSpy.mockResolvedValue({
       resourceType: "Bundle",
       type: "searchset",
       entry: [
         {
           search: { mode: "match" },
-          resource: mockThread1,
-        },
-        {
-          search: { mode: "include" },
           resource: mockMessage1,
         },
         {
-          search: { mode: "include" },
+          search: { mode: "match" },
           resource: mockMessage2,
         },
         {
-          search: { mode: "include" },
-          resource: newMessage,
-        },
-        {
           search: { mode: "match" },
-          resource: mockThread2,
+          resource: newMessage,
         },
       ],
     });
 
     // Create and emit the subscription bundle
-    const bundle = await createCommunicationSubBundle(newMessage);
+    const bundle = await createCommunicationSubBundle(mockThread1);
     act(() => {
       subManager.emitEventForCriteria(`Communication?${criteria}`, {
         type: "message",

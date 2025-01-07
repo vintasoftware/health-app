@@ -8,6 +8,7 @@
     "scheme": "myapp",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "jsEngine": "hermes",
     "ios": {
       "supportsTablet": true,
       "config": {

@@ -25,6 +25,7 @@ const mockThread: Communication = {
   status: "completed",
   sent: "2024-01-01T12:00:00Z",
   payload: [{ contentString: "Thread Topic" }],
+  extension: [{ url: "https://medplum.com/last-changed", valueDateTime: "2024-01-01T12:00:00Z" }],
 };
 
 const mockMessage1: Communication = {
@@ -72,7 +73,7 @@ async function createCommunicationSubBundle(communication: Communication): Promi
       },
       {
         resource: communication,
-        fullUrl: `https://api.medplum.com/fhir/R4/Communication/${communication.id as string}`,
+        fullUrl: `https://api.medplum.com/fhir/R4/Communication/${communication.id!}`,
       },
     ],
   };
@@ -101,8 +102,6 @@ describe("useChat (messages)", () => {
   function createWrapper(
     medplum: MockClient,
     props: Partial<{
-      onMessageReceived: (message: Communication) => void;
-      onMessageUpdated: (message: Communication) => void;
       onWebSocketClose: () => void;
       onWebSocketOpen: () => void;
       onSubscriptionConnect: () => void;
@@ -121,7 +120,6 @@ describe("useChat (messages)", () => {
   const criteria = getQueryString({
     "part-of:missing": true,
     subject: getReferenceString(mockPatient),
-    _revinclude: "Communication:part-of",
   });
 
   // Test cases:
@@ -232,10 +230,11 @@ describe("useChat (messages)", () => {
   });
 
   test("Handles real-time message incoming", async () => {
-    const onMessageReceivedMock = jest.fn();
     const { medplum, subManager } = await setup();
+    const searchSpy = jest.spyOn(medplum, "search");
+
     const { result } = renderHook(() => useChat(), {
-      wrapper: createWrapper(medplum, { onMessageReceived: onMessageReceivedMock }),
+      wrapper: createWrapper(medplum),
     });
 
     // Select the thread
@@ -275,8 +274,28 @@ describe("useChat (messages)", () => {
     // Create the resource and wait for it to be saved
     await medplum.createResource(newMessage);
 
+    // Mock the search implementation for messages of mockThread
+    searchSpy.mockResolvedValue({
+      resourceType: "Bundle",
+      type: "searchset",
+      entry: [
+        {
+          search: { mode: "match" },
+          resource: mockMessage1,
+        },
+        {
+          search: { mode: "match" },
+          resource: mockMessage2,
+        },
+        {
+          search: { mode: "match" },
+          resource: newMessage,
+        },
+      ],
+    });
+
     // Create and emit the subscription bundle
-    const bundle = await createCommunicationSubBundle(newMessage);
+    const bundle = await createCommunicationSubBundle(mockThread);
     act(() => {
       subManager.emitEventForCriteria(`Communication?${criteria}`, {
         type: "message",
@@ -289,58 +308,14 @@ describe("useChat (messages)", () => {
       expect(result.current.threadMessages).toHaveLength(3);
       expect(result.current.threadMessages[2].text).toBe("Real-time incoming message");
     });
-
-    // Verify the onMessageReceived callback was called
-    expect(onMessageReceivedMock).toHaveBeenCalledTimes(1);
-    expect(onMessageReceivedMock).toHaveBeenCalledWith(expect.objectContaining(newMessage));
-  });
-
-  test("Ignores outgoing new message on subscription", async () => {
-    const onMessageReceivedMock = jest.fn();
-    const { medplum, subManager } = await setup();
-    const { result } = renderHook(() => useChat(), {
-      wrapper: createWrapper(medplum, { onMessageReceived: onMessageReceivedMock }),
-    });
-
-    // Select the thread
-    act(() => {
-      result.current.selectThread("test-thread");
-    });
-
-    // Wait for initial load
-    await waitFor(() => {
-      expect(result.current.isLoadingMessages).toBe(false);
-    });
-
-    // Create a new message
-    const newMessage: Communication = {
-      resourceType: "Communication",
-      id: "msg-3",
-      status: "completed",
-      sent: "2024-01-01T12:03:00Z",
-      sender: createReference(mockPatient),
-      payload: [{ contentString: "Real-time outgoing message" }],
-      partOf: [createReference(mockThread)],
-    };
-
-    // Create and emit the subscription bundle
-    const bundle = await createCommunicationSubBundle(newMessage);
-    act(() => {
-      subManager.emitEventForCriteria(`Communication?${criteria}`, {
-        type: "message",
-        payload: bundle,
-      });
-    });
-
-    // Verify the onMessageReceived callback was not called
-    expect(onMessageReceivedMock).not.toHaveBeenCalled();
   });
 
   test("Updates existing message when receiving update via subscription", async () => {
-    const onMessageUpdatedMock = jest.fn();
     const { medplum, subManager } = await setup();
+    const searchSpy = jest.spyOn(medplum, "search");
+
     const { result } = renderHook(() => useChat(), {
-      wrapper: createWrapper(medplum, { onMessageUpdated: onMessageUpdatedMock }),
+      wrapper: createWrapper(medplum),
     });
 
     // Select the thread
@@ -362,8 +337,24 @@ describe("useChat (messages)", () => {
     // Update the resource and wait for it to be saved
     await medplum.updateResource(updatedMessage);
 
+    // Mock the search implementation for messages of mockThread
+    searchSpy.mockResolvedValue({
+      resourceType: "Bundle",
+      type: "searchset",
+      entry: [
+        {
+          search: { mode: "match" },
+          resource: mockMessage1,
+        },
+        {
+          search: { mode: "match" },
+          resource: updatedMessage,
+        },
+      ],
+    });
+
     // Create and emit the subscription bundle
-    const bundle = await createCommunicationSubBundle(updatedMessage);
+    const bundle = await createCommunicationSubBundle(mockThread);
     act(() => {
       subManager.emitEventForCriteria(`Communication?${criteria}`, {
         type: "message",
@@ -376,10 +367,6 @@ describe("useChat (messages)", () => {
       expect(result.current.threadMessages[1].text).toBe("Updated message");
       expect(result.current.threadMessages).toHaveLength(2);
     });
-
-    // Verify the onMessageUpdated callback was called
-    expect(onMessageUpdatedMock).toHaveBeenCalledTimes(1);
-    expect(onMessageUpdatedMock).toHaveBeenCalledWith(expect.objectContaining(updatedMessage));
   });
 
   test("Messages cleared if profile changes", async () => {
@@ -663,7 +650,7 @@ describe("useChat (messages)", () => {
     await medplum.createResource(newMessage);
 
     // Create and emit the subscription bundle
-    const bundle = await createCommunicationSubBundle(newMessage);
+    const bundle = await createCommunicationSubBundle(mockThread);
     act(() => {
       subManager.emitEventForCriteria(`Communication?${criteria}`, {
         type: "message",
