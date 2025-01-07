@@ -19,7 +19,17 @@ const compat = new FlatCompat({
 
 export default tseslint.config(
   {
-    ignores: ["dist/*", ".expo", "app-example", "**/node_modules", "components/ui/**"],
+    ignores: [
+      "dist/*",
+      ".expo/*",
+      "app-example/*",
+      "**/node_modules/*",
+      "components/ui/**",
+      "components/ui/**/**",
+      "expo-env.d.ts",
+      "metro.config.js",
+      "tailwind.config.js",
+    ],
   },
   eslint.configs.recommended,
   tseslint.configs.recommended,
