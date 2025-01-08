@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { ScrollView } from "react-native-gesture-handler";
 
-import type { ChatMessage } from "@/types/chat";
+import type { ChatMessage } from "@/models/chat";
 
 import { ChatMessageBubble } from "./ChatMessageBubble";
 import { LoadingDots } from "./LoadingDots";

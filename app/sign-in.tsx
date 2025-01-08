@@ -119,13 +119,7 @@ export default function SignIn() {
   }, [medplumLogin]);
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
+    <SafeAreaView className="flex-1 items-center justify-center">
       {isLoading && <Spinner size="large" />}
       {!isLoading && <Button title="Connect to Medplum" onPress={handleLogin} />}
     </SafeAreaView>

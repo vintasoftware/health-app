@@ -58,7 +58,7 @@ export function CreateThreadModal({ isOpen, onClose, onCreateThread }: CreateThr
               <InputField
                 value={topic}
                 onChangeText={setTopic}
-                placeholder="Enter thread topic..."
+                placeholder="Enter conversation topic..."
                 className="min-h-[44px] py-3"
               />
             </Input>

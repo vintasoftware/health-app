@@ -3,6 +3,7 @@ import { Bundle, Communication, Patient, Practitioner } from "@medplum/fhirtypes
 import { MockClient, MockSubscriptionManager } from "@medplum/mock";
 import { MedplumProvider } from "@medplum/react-hooks";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { when } from "jest-when";
 
 import { ChatProvider, useChat } from "@/contexts/ChatContext";
 import { getQueryString } from "@/utils/url";
@@ -80,7 +81,11 @@ async function createCommunicationSubBundle(communication: Communication): Promi
 }
 
 describe("useChat (messages)", () => {
-  async function setup(): Promise<{ medplum: MockClient; subManager: MockSubscriptionManager }> {
+  async function setup(): Promise<{
+    medplum: MockClient;
+    subManager: MockSubscriptionManager;
+    searchSpy: jest.SpyInstance;
+  }> {
     const medplum = new MockClient({ profile: mockPatient });
     const subManager = new MockSubscriptionManager(
       medplum,
@@ -95,7 +100,36 @@ describe("useChat (messages)", () => {
     await medplum.createResource(mockMessage1);
     await medplum.createResource(mockMessage2);
 
-    return { medplum, subManager };
+    // Mock the search implementation to return results with search modes
+    // (the default mock client doesn't support search modes)
+    const searchSpy = jest.spyOn(medplum, "search");
+    when(searchSpy)
+      .calledWith(
+        "Communication",
+        expect.objectContaining({
+          "part-of:missing": true,
+        }),
+        expect.anything(),
+      )
+      .mockResolvedValue({
+        resourceType: "Bundle",
+        type: "searchset",
+        entry: [
+          {
+            search: { mode: "match" },
+            resource: mockThread,
+          },
+          {
+            search: { mode: "include" },
+            resource: mockMessage1,
+          },
+          {
+            search: { mode: "include" },
+            resource: mockMessage2,
+          },
+        ],
+      });
+    return { medplum, subManager, searchSpy };
   }
 
   // Helper function to create wrapper with both providers
@@ -144,11 +178,11 @@ describe("useChat (messages)", () => {
     });
 
     // Check messages are displayed
-    expect(result.current.threadMessages).toHaveLength(2);
-    expect(result.current.threadMessages[0].text).toBe("Hello");
-    expect(result.current.threadMessages[0].senderType).toBe("Patient");
-    expect(result.current.threadMessages[1].text).toBe("Hi there");
-    expect(result.current.threadMessages[1].senderType).toBe("Practitioner");
+    expect(result.current.currentThread?.messages).toHaveLength(2);
+    expect(result.current.currentThread?.messages[0].text).toBe("Hello");
+    expect(result.current.currentThread?.messages[0].senderType).toBe("Patient");
+    expect(result.current.currentThread?.messages[1].text).toBe("Hi there");
+    expect(result.current.currentThread?.messages[1].senderType).toBe("Practitioner");
   });
 
   test("Sends new message", async () => {
@@ -200,8 +234,8 @@ describe("useChat (messages)", () => {
     });
 
     // Verify the new message appears in the list
-    expect(result.current.threadMessages[2].text).toBe("New message");
-    expect(result.current.threadMessages[2].senderType).toBe("Patient");
+    expect(result.current.currentThread?.messages[2].text).toBe("New message");
+    expect(result.current.currentThread?.messages[2].senderType).toBe("Patient");
   });
 
   test("Does not send empty message", async () => {
@@ -305,8 +339,8 @@ describe("useChat (messages)", () => {
 
     // Verify the new message appears in real-time
     await waitFor(() => {
-      expect(result.current.threadMessages).toHaveLength(3);
-      expect(result.current.threadMessages[2].text).toBe("Real-time incoming message");
+      expect(result.current.currentThread?.messages).toHaveLength(3);
+      expect(result.current.currentThread?.messages[2].text).toBe("Real-time incoming message");
     });
   });
 
@@ -364,8 +398,8 @@ describe("useChat (messages)", () => {
 
     // Verify the message was updated
     await waitFor(() => {
-      expect(result.current.threadMessages[1].text).toBe("Updated message");
-      expect(result.current.threadMessages).toHaveLength(2);
+      expect(result.current.currentThread?.messages[1].text).toBe("Updated message");
+      expect(result.current.currentThread?.messages).toHaveLength(2);
     });
   });
 
@@ -391,22 +425,18 @@ describe("useChat (messages)", () => {
     });
 
     // Verify initial messages are loaded
-    expect(result.current.threadMessages).toHaveLength(2);
-    expect(result.current.threadMessages[0].text).toBe("Hello");
-    expect(result.current.threadMessages[1].text).toBe("Hi there");
+    expect(result.current.currentThread?.messages).toHaveLength(2);
+    expect(result.current.currentThread?.messages[0].text).toBe("Hello");
+    expect(result.current.currentThread?.messages[1].text).toBe("Hi there");
 
     // Change the profile
     await act(async () => {
       medplum.setProfile(mockOtherPatient);
     });
 
-    // Wait for loading to complete with new profile
-    await waitFor(() => {
-      expect(result.current.isLoadingMessages).toBe(false);
-    });
-
-    // Verify messages are cleared
-    expect(result.current.threadMessages).toHaveLength(0);
+    // Verify state is reset
+    expect(result.current.currentThread).toBeNull();
+    expect(result.current.message).toBe("");
   });
 
   test("Handles WebSocket disconnection and reconnection", async () => {
@@ -466,7 +496,7 @@ describe("useChat (messages)", () => {
     expect(onWebSocketOpenMock).toHaveBeenCalledTimes(1);
 
     // New message should not be in chat yet
-    expect(result.current.threadMessages).not.toHaveLength(3);
+    expect(result.current.currentThread?.messages).not.toHaveLength(3);
 
     // Emit subscription connected event
     act(() => {
@@ -485,11 +515,11 @@ describe("useChat (messages)", () => {
     // Wait for reconnection and message refresh
     await waitFor(() => {
       expect(result.current.isLoadingMessages).toBe(false);
-      expect(result.current.threadMessages).toHaveLength(3);
+      expect(result.current.currentThread?.messages).toHaveLength(3);
     });
 
     // Verify the new message was fetched after reconnection
-    expect(result.current.threadMessages[2].text).toBe("Message while disconnected");
+    expect(result.current.currentThread?.messages[2].text).toBe("Message while disconnected");
   });
 
   test("Calls onError callback when subscription error occurs", async () => {
@@ -519,12 +549,19 @@ describe("useChat (messages)", () => {
 
   test("Calls onError on first load if search fails", async () => {
     const onErrorMock = jest.fn();
-    const { medplum } = await setup();
-    const searchSpy = jest.spyOn(medplum, "searchResources");
+    const { medplum, searchSpy } = await setup();
 
     // Mock search to throw an error
     const error = new Error("Failed to load messages");
-    searchSpy.mockRejectedValue(error);
+    when(searchSpy)
+      .calledWith(
+        "Communication",
+        expect.objectContaining({
+          "part-of": "Communication/test-thread",
+        }),
+        expect.anything(),
+      )
+      .mockRejectedValue(error);
 
     const { result } = renderHook(() => useChat(), {
       wrapper: createWrapper(medplum, { onError: onErrorMock }),
@@ -546,9 +583,6 @@ describe("useChat (messages)", () => {
     // Verify the onError callback was called with the error
     expect(onErrorMock).toHaveBeenCalledWith(error);
     expect(onErrorMock).toHaveBeenCalledTimes(1);
-
-    // Verify no messages were loaded
-    expect(result.current.threadMessages).toHaveLength(0);
   });
 
   test("New message starts with sent status only", async () => {
@@ -577,10 +611,12 @@ describe("useChat (messages)", () => {
 
     // Wait for messages to update
     await waitFor(() => {
-      const lastMessage = result.current.threadMessages[result.current.threadMessages.length - 1];
-      expect(lastMessage.sentAt).toBeDefined();
-      expect(lastMessage.received).toBeUndefined();
-      expect(lastMessage.read).toBe(false);
+      const lastMessage =
+        result.current.currentThread?.messages[result.current.currentThread?.messages.length - 1];
+      expect(lastMessage).toBeDefined();
+      expect(lastMessage!.sentAt).toBeDefined();
+      expect(lastMessage!.received).toBeUndefined();
+      expect(lastMessage!.read).toBe(false);
     });
   });
 
@@ -615,7 +651,7 @@ describe("useChat (messages)", () => {
 
     // Verify the message in the list has received status
     await waitFor(() => {
-      const message = result.current.threadMessages.find((m) => m.id === "msg-3");
+      const message = result.current.currentThread?.messages.find((m) => m.id === "msg-3");
       expect(message?.received).toBeDefined();
       expect(message?.read).toBe(false);
     });
@@ -660,10 +696,12 @@ describe("useChat (messages)", () => {
 
     // Verify received timestamp is set
     await waitFor(() => {
-      const lastMessage = result.current.threadMessages[result.current.threadMessages.length - 1];
-      expect(lastMessage.text).toBe("Test received status");
-      expect(lastMessage.received).toBeDefined();
-      expect(lastMessage.read).toBe(false);
+      const lastMessage =
+        result.current.currentThread?.messages[result.current.currentThread?.messages.length - 1];
+      expect(lastMessage).toBeDefined();
+      expect(lastMessage!.text).toBe("Test received status");
+      expect(lastMessage!.received).toBeDefined();
+      expect(lastMessage!.read).toBe(false);
     });
   });
 
@@ -684,7 +722,7 @@ describe("useChat (messages)", () => {
     });
 
     // Get an unread message
-    const unreadMessage = result.current.threadMessages.find((m) => m.id === "msg-2");
+    const unreadMessage = result.current.currentThread?.messages.find((m) => m.id === "msg-2");
     expect(unreadMessage).toBeDefined();
 
     // Mark message as read
@@ -694,7 +732,9 @@ describe("useChat (messages)", () => {
 
     // Verify message is marked as read
     await waitFor(() => {
-      const message = result.current.threadMessages.find((m) => m.id === unreadMessage!.id);
+      const message = result.current.currentThread?.messages.find(
+        (m) => m.id === unreadMessage!.id,
+      );
       expect(message?.read).toBe(true);
     });
   });
@@ -727,7 +767,7 @@ describe("useChat (messages)", () => {
     // Wait for initial load
     await waitFor(() => {
       expect(result.current.isLoadingMessages).toBe(false);
-      const message = result.current.threadMessages.find((m) => m.id === newMessage.id);
+      const message = result.current.currentThread?.messages.find((m) => m.id === newMessage.id);
       expect(message?.read).toBe(true);
     });
 
@@ -738,7 +778,7 @@ describe("useChat (messages)", () => {
 
     // Verify message is still marked as read
     await waitFor(() => {
-      const message = result.current.threadMessages.find((m) => m.id === newMessage.id);
+      const message = result.current.currentThread?.messages.find((m) => m.id === newMessage.id);
       expect(message?.read).toBe(true);
     });
   });
@@ -761,14 +801,16 @@ describe("useChat (messages)", () => {
     });
 
     // Try to mark an outgoing message as read
-    const unreadMessage = result.current.threadMessages.find((m) => m.id === "msg-1");
+    const unreadMessage = result.current.currentThread?.messages.find((m) => m.id === "msg-1");
     await act(async () => {
       await result.current.markMessageAsRead(unreadMessage!.id);
     });
 
     // Verify message is still marked as not read
     await waitFor(() => {
-      const message = result.current.threadMessages.find((m) => m.id === unreadMessage!.id);
+      const message = result.current.currentThread?.messages.find(
+        (m) => m.id === unreadMessage!.id,
+      );
       expect(message?.read).toBe(false);
     });
   });

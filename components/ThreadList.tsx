@@ -1,17 +1,18 @@
 import { useMedplumContext } from "@medplum/react-hooks";
 import { useRouter } from "expo-router";
-import { PlusIcon } from "lucide-react-native";
+import { PlusIcon, UserRound } from "lucide-react-native";
 import { FlatList } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonIcon, ButtonText } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
-import type { Thread } from "@/types/chat";
+import type { Thread } from "@/models/chat";
 import { formatTime } from "@/utils/datetime";
 
 interface ThreadListProps {
@@ -28,6 +29,8 @@ function ThreadItem({
   index: number;
   onPress: () => void;
 }) {
+  const { profile } = useMedplumContext();
+
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
       <Pressable
@@ -35,24 +38,23 @@ function ThreadItem({
         className="overflow-hidden bg-background-0 active:bg-secondary-100"
       >
         <View className="flex-row items-center gap-3 p-4">
-          <Avatar size="md" className="border-2 border-primary-100">
-            <Text className="font-medium text-typography-0">
-              {thread.topic.slice(0, 2).toUpperCase()}
-            </Text>
+          <Avatar size="md" className="border-2 border-primary-200">
+            <Icon as={UserRound} size="lg" className="stroke-white" />
+            <AvatarImage source={{ uri: thread.imageURL }} />
           </Avatar>
 
           <View className="flex-1">
             <View className="flex-row items-center gap-2">
               <Text className="text-base font-semibold text-typography-900">{thread.topic}</Text>
-              {thread.unreadCount > 0 && (
+              {profile && thread.getUnreadCount({ profile }) > 0 && (
                 <View className="rounded-full bg-primary-500 px-2 py-0.5">
                   <Text className="text-xs font-medium text-typography-0">
-                    {thread.unreadCount}
+                    {thread.getUnreadCount({ profile })}
                   </Text>
                 </View>
               )}
             </View>
-            <Text className="mt-0.5 text-sm text-typography-600" numberOfLines={2}>
+            <Text className="mt-0.5 text-sm text-typography-600" isTruncated={true}>
               {thread.lastMessage}
             </Text>
           </View>

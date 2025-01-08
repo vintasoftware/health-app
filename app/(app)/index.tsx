@@ -1,6 +1,6 @@
 import { useMedplum } from "@medplum/react-hooks";
 import { useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CreateThreadModal } from "@/components/CreateThreadModal";
@@ -20,22 +20,25 @@ export default function Index() {
     router.replace("/sign-in");
   }, [medplum, router]);
 
+  // When threads are loaded, fetch their image URLs
+  useEffect(() => {
+    if (!isLoadingThreads) {
+      threads.forEach((thread) => {
+        thread.loadImageURL({ medplum });
+      });
+    }
+  }, [isLoadingThreads, threads, medplum]);
+
   if (isLoadingThreads) {
     return (
-      <SafeAreaView
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <SafeAreaView className="flex-1 items-center justify-center">
         <Spinner size="large" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="bg-background-50" style={{ flex: 1 }}>
+    <SafeAreaView className="flex-1 bg-background-50">
       <ThreadListHeader onLogout={handleLogout} onCreateThread={() => setIsCreateModalOpen(true)} />
       <ThreadList threads={threads} onCreateThread={() => setIsCreateModalOpen(true)} />
       <CreateThreadModal

@@ -1,13 +1,37 @@
 import { useRouter } from "expo-router";
-import { ChevronLeftIcon } from "lucide-react-native";
+import { ChevronLeftIcon, UserRound } from "lucide-react-native";
 import { View } from "react-native";
 
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
+import { Thread } from "@/models/chat";
 
-export function ChatHeader() {
+function ChatStatus({ currentThread }: { currentThread: Thread }) {
+  let color;
+  let message;
+  if (!currentThread.lastMessageSentAt) {
+    color = "bg-warning-500";
+    message = "Please start the conversation";
+  } else if (currentThread.practitionerName) {
+    color = "bg-success-500";
+    message = `${currentThread.practitionerName} is active`;
+  } else {
+    color = "bg-error-500";
+    message = "A provider will respond you soon";
+  }
+  return (
+    <View className="flex-row items-center gap-1.5">
+      <View className={`h-2 w-2 rounded-full ${color}`} />
+      <Text size="sm" className="text-typography-600">
+        {message}
+      </Text>
+    </View>
+  );
+}
+
+export function ChatHeader({ currentThread }: { currentThread: Thread }) {
   const router = useRouter();
 
   return (
@@ -27,18 +51,14 @@ export function ChatHeader() {
         </Pressable>
         <View className="flex-1 flex-row items-center gap-3">
           <Avatar size="md" className="border-2 border-primary-200">
-            <Text className="text-typography-0">DR</Text>
+            <Icon as={UserRound} size="lg" className="stroke-white" />
+            <AvatarImage source={{ uri: currentThread.imageURL }} />
           </Avatar>
           <View className="flex-col">
             <Text size="md" bold className="text-typography-900">
-              Sample Practice
+              {currentThread.topic}
             </Text>
-            <View className="flex-row items-center gap-1.5">
-              <View className="h-2 w-2 rounded-full bg-success-500" />
-              <Text size="sm" className="text-typography-600">
-                Online
-              </Text>
-            </View>
+            <ChatStatus currentThread={currentThread} />
           </View>
         </View>
       </View>

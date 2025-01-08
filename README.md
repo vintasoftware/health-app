@@ -106,7 +106,7 @@ npm run prepare
 - `/components` - Reusable React components
 - `/components/ui` - gluestack-ui v2 components
 - `/contexts` - React context providers and hooks for business logic
-- `/types` - TypeScript type definitions
+- `/models` - Business logic models
 - `/utils` - Utility functions
 - `/__tests__` - Test files
 
