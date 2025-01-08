@@ -1,4 +1,4 @@
-import { useMedplum } from "@medplum/react-hooks";
+import { useMedplumContext } from "@medplum/react-hooks";
 import { EllipsisVerticalIcon, PlusIcon } from "lucide-react-native";
 import { useState } from "react";
 
@@ -15,8 +15,8 @@ interface ThreadListHeaderProps {
 }
 
 export function ThreadListHeader({ onLogout, onCreateThread }: ThreadListHeaderProps) {
-  const medplum = useMedplum();
-  const isPatient = medplum.getProfile()?.resourceType === "Patient";
+  const { profile } = useMedplumContext();
+  const isPatient = profile?.resourceType === "Patient";
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   return (

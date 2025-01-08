@@ -1,4 +1,4 @@
-import { useMedplum } from "@medplum/react-hooks";
+import { useMedplumContext } from "@medplum/react-hooks";
 import { Redirect, Slot } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -7,8 +7,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { ChatProvider } from "@/contexts/ChatContext";
 
 export default function AppLayout() {
-  const medplum = useMedplum();
-  const isPractitioner = medplum.getProfile()?.resourceType === "Practitioner";
+  const { medplum, profile } = useMedplumContext();
+  const isPractitioner = profile?.resourceType === "Practitioner";
 
   if (medplum.isLoading()) {
     return (

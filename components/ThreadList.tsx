@@ -1,4 +1,4 @@
-import { useMedplum } from "@medplum/react-hooks";
+import { useMedplumContext } from "@medplum/react-hooks";
 import { useRouter } from "expo-router";
 import { PlusIcon } from "lucide-react-native";
 import { FlatList } from "react-native";
@@ -59,8 +59,8 @@ function ThreadItem({
 }
 
 function EmptyState({ onCreateThread }: { onCreateThread?: () => void }) {
-  const medplum = useMedplum();
-  const isPatient = medplum.getProfile()?.resourceType === "Patient";
+  const { profile } = useMedplumContext();
+  const isPatient = profile?.resourceType === "Patient";
 
   return (
     <View className="flex-1 items-center justify-center p-4">
