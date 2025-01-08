@@ -20,43 +20,49 @@ export function ThreadListHeader({ onLogout, onCreateThread }: ThreadListHeaderP
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   return (
-    <View className="h-16 flex-row items-center justify-between bg-background-50 px-4">
-      <Text size="lg" bold>
-        Chat threads
-      </Text>
+    <View className="border-b border-outline-100 bg-background-0">
+      <View className="h-16 flex-row items-center justify-between px-4">
+        <Text size="lg" bold className="text-typography-900">
+          Chat threads
+        </Text>
 
-      <View className="flex-row items-center gap-2">
-        {isPatient && onCreateThread && (
-          <Button variant="outline" action="primary" size="sm" onPress={onCreateThread}>
-            <ButtonIcon as={PlusIcon} size="sm" />
-            <ButtonText>New Thread</ButtonText>
-          </Button>
-        )}
-
-        <Popover
-          onClose={() => setIsMenuVisible(false)}
-          isOpen={isMenuVisible}
-          trigger={(triggerProps) => (
-            <Pressable {...triggerProps} onPress={() => setIsMenuVisible(true)}>
-              <Icon as={EllipsisVerticalIcon} size="lg" />
-            </Pressable>
+        <View className="flex-row items-center gap-2">
+          {isPatient && onCreateThread && (
+            <Button variant="outline" action="primary" size="sm" onPress={onCreateThread}>
+              <ButtonIcon as={PlusIcon} size="sm" />
+              <ButtonText>New Thread</ButtonText>
+            </Button>
           )}
-        >
-          <PopoverBackdrop />
-          <PopoverContent>
-            <PopoverBody>
+
+          <Popover
+            onClose={() => setIsMenuVisible(false)}
+            isOpen={isMenuVisible}
+            trigger={(triggerProps) => (
               <Pressable
-                onPress={() => {
-                  setIsMenuVisible(false);
-                  onLogout?.();
-                }}
-                className="flex-row items-center p-1 active:bg-secondary-600"
+                {...triggerProps}
+                onPress={() => setIsMenuVisible(true)}
+                className="rounded-full p-2 active:bg-secondary-100"
               >
-                <Text>Logout</Text>
+                <Icon as={EllipsisVerticalIcon} size="md" className="text-typography-700" />
               </Pressable>
-            </PopoverBody>
-          </PopoverContent>
-        </Popover>
+            )}
+          >
+            <PopoverBackdrop />
+            <PopoverContent>
+              <PopoverBody>
+                <Pressable
+                  onPress={() => {
+                    setIsMenuVisible(false);
+                    onLogout?.();
+                  }}
+                  className="flex-row items-center p-3 active:bg-secondary-100"
+                >
+                  <Text className="text-typography-700">Logout</Text>
+                </Pressable>
+              </PopoverBody>
+            </PopoverContent>
+          </Popover>
+        </View>
       </View>
     </View>
   );

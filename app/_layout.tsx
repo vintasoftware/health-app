@@ -15,7 +15,7 @@ import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
+import { GluestackUIProvider } from "@/components/gluestack-ui-provider";
 import { oauth2ClientId } from "@/utils/medplum-oauth2";
 
 export const unstable_settings = {

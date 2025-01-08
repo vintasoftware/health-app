@@ -30,30 +30,39 @@ function ThreadItem({
 }) {
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
-      <Pressable onPress={onPress} className="bg-transparent active:bg-secondary-600">
+      <Pressable
+        onPress={onPress}
+        className="overflow-hidden bg-background-0 active:bg-secondary-100"
+      >
         <View className="flex-row items-center gap-3 p-4">
-          <Avatar size="md">
-            <Text>{thread.topic.slice(0, 2).toUpperCase()}</Text>
+          <Avatar size="md" className="border-2 border-primary-100">
+            <Text className="font-medium text-typography-0">
+              {thread.topic.slice(0, 2).toUpperCase()}
+            </Text>
           </Avatar>
 
           <View className="flex-1">
             <View className="flex-row items-center gap-2">
-              <Text className="text-base font-medium text-typography-900">{thread.topic}</Text>
+              <Text className="text-base font-semibold text-typography-900">{thread.topic}</Text>
               {thread.unreadCount > 0 && (
                 <View className="rounded-full bg-primary-500 px-2 py-0.5">
-                  <Text className="text-xs text-typography-0">{thread.unreadCount}</Text>
+                  <Text className="text-xs font-medium text-typography-0">
+                    {thread.unreadCount}
+                  </Text>
                 </View>
               )}
             </View>
-            <Text className="text-sm text-typography-600">{thread.lastMessage}</Text>
+            <Text className="mt-0.5 text-sm text-typography-600" numberOfLines={2}>
+              {thread.lastMessage}
+            </Text>
           </View>
 
-          <Text className="text-xs text-typography-500">
+          <Text className="mt-1 self-start text-xs text-typography-500">
             {thread.lastMessageSentAt ? formatTime(thread.lastMessageSentAt) : ""}
           </Text>
         </View>
       </Pressable>
-      <View className="h-[1px] bg-outline-200" />
+      <View className="h-[1px] bg-outline-100" />
     </Animated.View>
   );
 }
@@ -64,15 +73,17 @@ function EmptyState({ onCreateThread }: { onCreateThread?: () => void }) {
 
   return (
     <View className="flex-1 items-center justify-center p-4">
-      <Text className="mb-4 text-center text-lg text-typography-600">
-        No chat threads yet. {isPatient && "Start a new conversation!"}
-      </Text>
-      {isPatient && onCreateThread && (
-        <Button variant="outline" action="primary" size="md" onPress={onCreateThread}>
-          <ButtonIcon as={PlusIcon} size="sm" />
-          <ButtonText>New Thread</ButtonText>
-        </Button>
-      )}
+      <View className="items-center rounded-2xl border border-outline-100 bg-background-0 p-8">
+        <Text className="mb-4 text-center text-lg text-typography-600">
+          No chat threads yet. {isPatient && "Start a new conversation!"}
+        </Text>
+        {isPatient && onCreateThread && (
+          <Button variant="outline" action="primary" size="md" onPress={onCreateThread}>
+            <ButtonIcon as={PlusIcon} size="sm" />
+            <ButtonText>New Thread</ButtonText>
+          </Button>
+        )}
+      </View>
     </View>
   );
 }
@@ -83,7 +94,7 @@ export function ThreadList({ threads, onCreateThread }: ThreadListProps) {
   if (threads.length === 0) {
     return (
       <GestureHandlerRootView className="flex-1">
-        <Box className="flex-1">
+        <Box className="flex-1 bg-background-50">
           <EmptyState onCreateThread={onCreateThread} />
         </Box>
       </GestureHandlerRootView>
@@ -92,7 +103,7 @@ export function ThreadList({ threads, onCreateThread }: ThreadListProps) {
 
   return (
     <GestureHandlerRootView className="flex-1">
-      <Box className="flex-1">
+      <Box className="flex-1 bg-background-50">
         <FlatList
           data={threads}
           keyExtractor={(item) => item.id}
@@ -104,7 +115,6 @@ export function ThreadList({ threads, onCreateThread }: ThreadListProps) {
             />
           )}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 20 }}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}

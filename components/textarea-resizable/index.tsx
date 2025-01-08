@@ -1,11 +1,11 @@
 // Custom component for input that allows resizing, based on gluestack-ui/textarea
 "use client";
-import React from "react";
-import { createTextarea } from "@gluestack-ui/textarea";
-import { View, TextInput } from "react-native";
-import { tva } from "@gluestack-ui/nativewind-utils/tva";
-import { withStyleContext, useStyleContext } from "@gluestack-ui/nativewind-utils/withStyleContext";
 import type { VariantProps } from "@gluestack-ui/nativewind-utils";
+import { tva } from "@gluestack-ui/nativewind-utils/tva";
+import { useStyleContext, withStyleContext } from "@gluestack-ui/nativewind-utils/withStyleContext";
+import { createTextarea } from "@gluestack-ui/textarea";
+import React from "react";
+import { TextInput, View } from "react-native";
 
 const SCOPE = "TEXTAREA-RESIZABLE";
 const UITextarea = createTextarea({

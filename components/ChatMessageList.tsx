@@ -17,9 +17,9 @@ export function ChatMessageList({ messages, loading }: ChatMessageListProps) {
   return (
     <ScrollView
       ref={scrollViewRef}
-      className="flex-1"
+      className="flex-1 bg-background-50"
       onContentSizeChange={() => {
-        // Also scroll to bottom when content size changes (e.g. new message)
+        // Scroll to bottom when content size changes (e.g. new message)-]
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }}
     >
