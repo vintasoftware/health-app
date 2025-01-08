@@ -104,10 +104,19 @@ npm run prepare
 
 - `/app` - Main application code using Expo Router for file-based routing
 - `/components` - Reusable React components
-- `/hooks` - Custom React hooks for business logic
+- `/components/ui` - gluestack-ui v2 components
+- `/contexts` - React context providers and hooks for business logic
 - `/types` - TypeScript type definitions
 - `/utils` - Utility functions
 - `/__tests__` - Test files
+
+## Updating gluestack-ui
+
+gluestack-ui v2 components are kept as-is in the `/components/ui` directory. To update them, run the following command:
+
+```bash
+npx gluestack-ui@latest add --all
+```
 
 ## License
 
