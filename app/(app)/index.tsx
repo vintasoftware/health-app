@@ -1,6 +1,6 @@
 import { useMedplum } from "@medplum/react-hooks";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CreateThreadModal } from "@/components/CreateThreadModal";
@@ -19,15 +19,6 @@ export default function Index() {
     medplum.signOut();
     router.replace("/sign-in");
   }, [medplum, router]);
-
-  // When threads are loaded, fetch their image URLs
-  useEffect(() => {
-    if (!isLoadingThreads) {
-      threads.forEach((thread) => {
-        thread.loadImageURL({ medplum });
-      });
-    }
-  }, [isLoadingThreads, threads, medplum]);
 
   if (isLoadingThreads) {
     return (

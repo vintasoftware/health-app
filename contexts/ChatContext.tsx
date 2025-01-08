@@ -219,6 +219,11 @@ export function ChatProvider({
       .sort((a, b) => b.threadOrder - a.threadOrder);
   }, [threads, profile, threadCommMap]);
 
+  // Whenever threadsOut changes, load the image URL for each thread
+  useEffect(() => {
+    threadsOut.forEach((thread) => thread.loadImageURL({ medplum }));
+  }, [threadsOut, medplum]);
+
   // Current thread memoized
   const currentThread = useMemo(() => {
     if (!currentThreadId || !profile) return null;

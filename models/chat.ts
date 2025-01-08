@@ -52,8 +52,8 @@ export class ChatMessage {
 export class Thread {
   readonly messages: ChatMessage[];
   readonly originalCommunication: Communication;
-  static imageURLCache = new Map<string, string>();
-  imageURL?: string;
+  static imageURLMap = new Map<string, string>();
+  static loadImageURLPromiseMap = new Map<string, Promise<void>>();
 
   constructor({
     messages,
@@ -120,27 +120,30 @@ export class Thread {
     return this.lastProviderCommunication?.sender?.display;
   }
 
-  async loadImageURL({ medplum }: { medplum: MedplumClient }) {
-    const practitionerId = this.lastProviderCommunication?.sender?.reference;
-    if (practitionerId) {
-      let imageUrl = Thread.imageURLCache.get(practitionerId);
+  get practitionerId(): string | undefined {
+    return this.lastProviderCommunication?.sender?.reference;
+  }
 
-      if (!imageUrl) {
-        try {
-          const practitioner = await medplum.readReference(
-            this.lastProviderCommunication?.sender as Reference<Practitioner>,
-          );
-          if (practitioner.photo?.[0]?.url) {
-            imageUrl = practitioner.photo[0].url;
-            Thread.imageURLCache.set(practitionerId, imageUrl);
-          }
-        } catch {
-          // Ignore errors from fetching practitioner image
-        }
+  get imageURL(): string | undefined {
+    return this.practitionerId ? Thread.imageURLMap.get(this.practitionerId) : undefined;
+  }
+
+  async loadImageURL({ medplum }: { medplum: MedplumClient }) {
+    // Load the image URL for the thread if it hasn't been loaded yet and it isn't already loading
+    if (!this.practitionerId) return;
+    if (Thread.imageURLMap.has(this.practitionerId)) return;
+    if (Thread.loadImageURLPromiseMap.has(this.practitionerId)) return;
+
+    try {
+      const practitioner = await medplum.readReference(
+        this.lastProviderCommunication?.sender as Reference<Practitioner>,
+      );
+      if (practitioner.photo?.[0]?.url) {
+        const imageUrl = practitioner.photo[0].url;
+        Thread.imageURLMap.set(this.practitionerId, imageUrl);
       }
-      if (imageUrl) {
-        this.imageURL = imageUrl;
-      }
+    } catch {
+      // Ignore errors from fetching practitioner image
     }
   }
 }
