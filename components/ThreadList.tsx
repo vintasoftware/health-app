@@ -79,11 +79,17 @@ function EmptyState({ onCreateThread }: { onCreateThread?: () => void }) {
   return (
     <View className="flex-1 items-center justify-center p-4">
       <View className="items-center rounded-2xl border border-outline-100 bg-background-0 p-8">
-        <Text className="mb-4 text-center text-lg text-typography-600">
+        <Text className="text-center text-lg text-typography-600">
           No chat threads yet. {isPatient && "Start a new conversation!"}
         </Text>
         {isPatient && onCreateThread && (
-          <Button variant="outline" action="primary" size="md" onPress={onCreateThread}>
+          <Button
+            className="mt-4"
+            variant="outline"
+            action="primary"
+            size="md"
+            onPress={onCreateThread}
+          >
             <ButtonIcon as={PlusIcon} size="sm" />
             <ButtonText>New Thread</ButtonText>
           </Button>

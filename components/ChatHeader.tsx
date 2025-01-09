@@ -1,3 +1,4 @@
+import { useMedplumContext } from "@medplum/react-hooks";
 import { useRouter } from "expo-router";
 import { ChevronLeftIcon, UserRound } from "lucide-react-native";
 import { useMemo } from "react";
@@ -10,7 +11,16 @@ import { Text } from "@/components/ui/text";
 import { Thread } from "@/models/chat";
 
 function ChatStatus({ currentThread }: { currentThread: Thread }) {
+  const { profile } = useMedplumContext();
+  const isPatient = profile?.resourceType === "Patient";
+
   const { color, message } = useMemo(() => {
+    if (!isPatient) {
+      return {
+        color: "bg-tertiary-500",
+        message: "Provide timely responses",
+      };
+    }
     if (!currentThread.lastMessageSentAt) {
       return {
         color: "bg-warning-500",
@@ -24,10 +34,10 @@ function ChatStatus({ currentThread }: { currentThread: Thread }) {
       };
     }
     return {
-      color: "bg-error-500",
+      color: "bg-tertiary-500",
       message: "A provider will respond to you soon",
     };
-  }, [currentThread]);
+  }, [currentThread, isPatient]);
   return (
     <View className="flex-row items-center gap-1.5">
       <View className={`h-2 w-2 rounded-full ${color}`} />
