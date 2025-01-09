@@ -9,18 +9,24 @@ import { Text } from "@/components/ui/text";
 import { Thread } from "@/models/chat";
 
 function ChatStatus({ currentThread }: { currentThread: Thread }) {
-  let color;
-  let message;
-  if (!currentThread.lastMessageSentAt) {
-    color = "bg-warning-500";
-    message = "Please start the conversation";
-  } else if (currentThread.practitionerName) {
-    color = "bg-success-500";
-    message = `${currentThread.practitionerName} is active`;
-  } else {
-    color = "bg-error-500";
-    message = "A provider will respond you soon";
-  }
+  const { color, message } = useMemo(() => {
+    if (!currentThread.lastMessageSentAt) {
+      return {
+        color: "bg-warning-500",
+        message: "Please start the conversation",
+      };
+    }
+    if (currentThread.practitionerName) {
+      return {
+        color: "bg-success-500",
+        message: `${currentThread.practitionerName} is active`,
+      };
+    }
+    return {
+      color: "bg-error-500",
+      message: "A provider will respond to you soon",
+    };
+  }, [currentThread]);
   return (
     <View className="flex-row items-center gap-1.5">
       <View className={`h-2 w-2 rounded-full ${color}`} />
