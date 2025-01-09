@@ -12,10 +12,7 @@ export default function AppLayout() {
 
   if (medplum.isLoading()) {
     return (
-      <SafeAreaView
-        className="bg-background-50"
-        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-      >
+      <SafeAreaView className="flex-1 items-center justify-center bg-background-50">
         <Spinner size="large" />
       </SafeAreaView>
     );

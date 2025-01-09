@@ -53,7 +53,7 @@ export default function RootLayout() {
       <GluestackUIProvider mode="light">
         <SafeAreaProvider>
           <MedplumProvider medplum={medplum}>
-            <GestureHandlerRootView style={{ flex: 1 }}>
+            <GestureHandlerRootView className="flex-1">
               <Stack
                 screenOptions={{
                   headerShown: false,

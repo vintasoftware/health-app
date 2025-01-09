@@ -177,12 +177,18 @@ describe("useChat (threads)", () => {
     });
 
     // Verify search was called correctly
-    expect(searchSpy).toHaveBeenCalledWith("Communication", {
-      "part-of:missing": true,
-      subject: "Patient/test-patient",
-      _revinclude: "Communication:part-of",
-      _sort: "-sent",
-    });
+    expect(searchSpy).toHaveBeenCalledWith(
+      "Communication",
+      {
+        "part-of:missing": true,
+        subject: "Patient/test-patient",
+        _revinclude: "Communication:part-of",
+        _sort: "-sent",
+      },
+      {
+        cache: "no-cache",
+      },
+    );
 
     // Check threads are displayed correctly
     expect(result.current.threads).toHaveLength(2);
@@ -241,12 +247,18 @@ describe("useChat (threads)", () => {
       expect(result.current.isLoadingThreads).toBe(false);
     });
 
-    expect(searchSpy).toHaveBeenCalledWith("Communication", {
-      "part-of:missing": true,
-      subject: undefined,
-      _revinclude: "Communication:part-of",
-      _sort: "-sent",
-    });
+    expect(searchSpy).toHaveBeenCalledWith(
+      "Communication",
+      {
+        "part-of:missing": true,
+        subject: undefined,
+        _revinclude: "Communication:part-of",
+        _sort: "-sent",
+      },
+      expect.objectContaining({
+        cache: "no-cache",
+      }),
+    );
   });
 
   test("Creates new thread successfully", async () => {

@@ -5,48 +5,13 @@ import {
   ProfileResource,
   QueryTypes,
 } from "@medplum/core";
-import {
-  Bundle,
-  Communication,
-  Patient,
-  Practitioner,
-  Reference,
-  RelatedPerson,
-} from "@medplum/fhirtypes";
+import { Bundle, Communication, Patient, Reference } from "@medplum/fhirtypes";
 import { useMedplum, useSubscription } from "@medplum/react-hooks";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import type { ChatMessage, Thread } from "@/types/chat";
+import { Thread } from "@/models/chat";
 import { syncResourceArray } from "@/utils/array";
 import { getQueryString } from "@/utils/url";
-
-function communicationToThread(
-  profile: Patient | Practitioner | RelatedPerson,
-  comm: Communication,
-  threadMessageComms: Communication[],
-): Thread {
-  const lastMessage = threadMessageComms
-    .sort((a, b) => {
-      if (!a.sent) return 1;
-      if (!b.sent) return -1;
-      return new Date(a.sent).getTime() - new Date(b.sent).getTime();
-    })
-    .reverse()?.[0];
-  const unreadCount = threadMessageComms.filter(
-    (msg) => msg.status !== "completed" && msg.sender?.reference !== getReferenceString(profile),
-  ).length;
-
-  return {
-    id: comm.id!,
-    topic: comm.payload?.[0]?.contentString || comm.id!,
-    lastMessage: lastMessage?.payload?.[0]?.contentString,
-    lastMessageSentAt: lastMessage?.sent ? new Date(lastMessage.sent) : undefined,
-    threadOrder: new Date(
-      lastMessage?.sent || comm.sent || comm.meta?.lastUpdated || new Date(),
-    ).getTime(),
-    unreadCount,
-  };
-}
 
 async function fetchThreads({
   medplum,
@@ -55,7 +20,9 @@ async function fetchThreads({
   medplum: MedplumClient;
   threadsQuery: QueryTypes;
 }): Promise<{ threads: Communication[]; threadCommMap: Map<string, Communication[]> }> {
-  const searchResults = await medplum.search("Communication", threadsQuery);
+  const searchResults = await medplum.search("Communication", threadsQuery, {
+    cache: "no-cache",
+  });
   const threads =
     searchResults.entry?.filter((e) => e.search?.mode === "match").map((e) => e.resource!) || [];
 
@@ -73,23 +40,6 @@ async function fetchThreads({
   });
 
   return { threads, threadCommMap };
-}
-
-function getMessageOrder(comm: Communication): number {
-  const sent = comm.sent || comm.meta?.lastUpdated || new Date();
-  return new Date(sent).getTime();
-}
-
-function communicationToMessage(communication: Communication): ChatMessage {
-  return {
-    id: communication.id!,
-    text: communication.payload?.[0]?.contentString || "",
-    senderType: communication.sender?.reference?.includes("Patient") ? "Patient" : "Practitioner",
-    sentAt: new Date(communication.sent!),
-    messageOrder: getMessageOrder(communication),
-    received: communication.received ? new Date(communication.received) : undefined,
-    read: communication.status === "completed",
-  };
 }
 
 async function updateUnreceivedCommunications({
@@ -220,9 +170,8 @@ interface ChatContextType {
   createThread: (topic: string) => Promise<string | undefined>;
 
   // Current thread & messages
-  currentThreadId: string | null;
+  currentThread: Thread | null;
   selectThread: (threadId: string) => void;
-  threadMessages: ChatMessage[];
   message: string;
   setMessage: (message: string) => void;
   sendMessage: () => Promise<void>;
@@ -257,26 +206,33 @@ export function ChatProvider({
   const [isLoadingThreads, setIsLoadingThreads] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
-  // Threads
+  // Threads memoized, sorted by threadOrder
   const threadsOut = useMemo(() => {
     if (!profile) return [];
     return threads
-      .map((thread) => communicationToThread(profile, thread, threadCommMap.get(thread.id!) || []))
+      .map((thread) =>
+        Thread.fromCommunication({
+          comm: thread,
+          threadMessageComms: threadCommMap.get(thread.id!) || [],
+        }),
+      )
       .sort((a, b) => b.threadOrder - a.threadOrder);
   }, [threads, profile, threadCommMap]);
 
-  // Thread messages
-  const threadMessagesOut = useMemo(() => {
-    if (!currentThreadId) return [];
-    return (
-      threadCommMap
-        .get(currentThreadId)
-        ?.map(communicationToMessage)
-        .sort((a, b) => a.messageOrder - b.messageOrder) || []
-    );
-  }, [currentThreadId, threadCommMap]);
+  // Whenever threadsOut changes, load the image URL for each thread
+  useEffect(() => {
+    threadsOut.forEach((thread) => thread.loadImageURL({ medplum }));
+  }, [threadsOut, medplum]);
 
-  // Profile reference string
+  // Current thread memoized
+  const currentThread = useMemo(() => {
+    if (!currentThreadId || !profile) return null;
+    const thread = threadsOut.find((t) => t.id === currentThreadId);
+    if (!thread) return null;
+    return thread;
+  }, [currentThreadId, threadsOut, profile]);
+
+  // Profile reference string, useful to detect profile changes
   const profileRefStr = useMemo(() => (profile ? getReferenceString(profile) : ""), [profile]);
 
   // Query setup for subscription
@@ -386,15 +342,20 @@ export function ChatProvider({
     },
   );
 
-  // Handle profile changes
-  // Lint disabled because we can make sure this will trigger an update when local profile !== medplum.getProfile()
+  // Handle profile changes, clear state
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const latestProfile = medplum.getProfile();
     if (profile?.id !== latestProfile?.id) {
       setProfile(latestProfile);
+      setThreads([]);
       setThreadCommMap(new Map());
       setCurrentThreadId(null);
+      setMessage("");
+      setReconnecting(false);
+      setConnectedOnce(false);
+      setIsLoadingThreads(true);
+      setIsLoadingMessages(false);
     }
   });
 
@@ -494,9 +455,8 @@ export function ChatProvider({
     connectedOnce,
     reconnecting,
     createThread,
-    currentThreadId,
+    currentThread,
     selectThread,
-    threadMessages: threadMessagesOut,
     message,
     setMessage,
     sendMessage,

@@ -22,20 +22,14 @@ export default function Index() {
 
   if (isLoadingThreads) {
     return (
-      <SafeAreaView
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <SafeAreaView className="flex-1 items-center justify-center">
         <Spinner size="large" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="bg-background-50" style={{ flex: 1 }}>
+    <SafeAreaView className="flex-1 bg-background-50">
       <ThreadListHeader onLogout={handleLogout} onCreateThread={() => setIsCreateModalOpen(true)} />
       <ThreadList threads={threads} onCreateThread={() => setIsCreateModalOpen(true)} />
       <CreateThreadModal

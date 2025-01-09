@@ -2,7 +2,7 @@ import { useMedplumProfile } from "@medplum/react-hooks";
 import { View } from "react-native";
 
 import { Text } from "@/components/ui/text";
-import type { ChatMessage } from "@/types/chat";
+import type { ChatMessage } from "@/models/chat";
 import { formatTime } from "@/utils/datetime";
 
 interface ChatMessageBubbleProps {
