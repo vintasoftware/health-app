@@ -30,6 +30,7 @@ function ThreadItem({
   onPress: () => void;
 }) {
   const { profile } = useMedplumContext();
+  const isPractitioner = profile?.resourceType === "Practitioner";
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
@@ -40,12 +41,14 @@ function ThreadItem({
         <View className="flex-row items-center gap-3 p-4">
           <Avatar size="md" className="border-2 border-primary-200">
             <Icon as={UserRound} size="lg" className="stroke-white" />
-            <AvatarImage source={{ uri: thread.imageURL }} />
+            <AvatarImage source={{ uri: thread.avatarURL }} />
           </Avatar>
 
           <View className="flex-1">
             <View className="flex-row items-center gap-2">
-              <Text className="text-base font-semibold text-typography-900">{thread.topic}</Text>
+              <Text className="text-sm font-semibold text-typography-900" isTruncated={true}>
+                {isPractitioner ? `${thread.patientName}: ${thread.topic}` : thread.topic}
+              </Text>
               {profile && thread.getUnreadCount({ profile }) > 0 && (
                 <View className="rounded-full bg-primary-500 px-2 py-0.5">
                   <Text className="text-xs font-medium text-typography-0">

@@ -5,7 +5,7 @@ import {
   ProfileResource,
   QueryTypes,
 } from "@medplum/core";
-import { Bundle, Communication, Patient, Reference } from "@medplum/fhirtypes";
+import { Bundle, Communication, Patient, Practitioner, Reference } from "@medplum/fhirtypes";
 import { useMedplum, useSubscription } from "@medplum/react-hooks";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
@@ -88,6 +88,59 @@ async function fetchThreadCommunications({
       cache: "no-cache",
     },
   );
+}
+
+const imageURLCache = new Map<string, string>();
+async function fetchThreadsImages({
+  medplum,
+  threads,
+  threadCommMap,
+}: {
+  medplum: MedplumClient;
+  threads: Communication[];
+  threadCommMap: Map<string, Communication[]>;
+}): Promise<Map<string, string>> {
+  const profile = medplum.getProfile();
+  if (!profile) return new Map();
+
+  const imageMap = new Map<string, string>();
+  await Promise.all(
+    threads.map(async (comm) => {
+      // If the profile is a patient, we need to get the practitioner's avatar, else get the patient's avatar:
+      const thread = Thread.fromCommunication({
+        // convert the communication to a thread
+        comm,
+        threadMessageComms: threadCommMap.get(comm.id!) || [],
+        avatarURL: undefined,
+      });
+      const avatarRefId =
+        profile.resourceType === "Patient" ? thread.practitionerId : thread.patientId;
+      if (!avatarRefId) return;
+
+      // If already cached, set the image URL
+      const avatarURL = imageURLCache.get(avatarRefId);
+      if (avatarURL) {
+        imageMap.set(thread.id!, avatarURL);
+        return;
+      }
+
+      // Otherwise, fetch the avatar URL
+      try {
+        const avatarProfile = (await medplum.readReference({
+          type: profile.resourceType === "Patient" ? "Practitioner" : "Patient",
+          reference: avatarRefId,
+        })) satisfies Practitioner | Patient;
+        if (avatarProfile.photo?.[0]?.url) {
+          const avatarURL = avatarProfile.photo[0].url;
+          imageURLCache.set(avatarRefId, avatarURL);
+          imageMap.set(thread.id!, avatarURL);
+        }
+      } catch {
+        // Ignore readReference errors
+      }
+    }),
+  );
+  return imageMap;
 }
 
 async function createThreadComm({
@@ -197,6 +250,7 @@ export function ChatProvider({
   const [profile, setProfile] = useState(medplum.getProfile());
   const [threads, setThreads] = useState<Communication[]>([]);
   const [threadCommMap, setThreadCommMap] = useState<Map<string, Communication[]>>(new Map());
+  const [threadImageMap, setThreadImageMap] = useState<Map<string, string>>(new Map());
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
   const [reconnecting, setReconnecting] = useState(false);
   const [connectedOnce, setConnectedOnce] = useState(false);
@@ -211,15 +265,11 @@ export function ChatProvider({
         Thread.fromCommunication({
           comm: thread,
           threadMessageComms: threadCommMap.get(thread.id!) || [],
+          avatarURL: threadImageMap.get(thread.id!),
         }),
       )
       .sort((a, b) => b.threadOrder - a.threadOrder);
-  }, [threads, profile, threadCommMap]);
-
-  // Whenever threadsOut changes, load the image URL for each thread
-  useEffect(() => {
-    threadsOut.forEach((thread) => thread.loadImageURL({ medplum }));
-  }, [threadsOut, medplum]);
+  }, [profile, threads, threadCommMap, threadImageMap]);
 
   // Current thread memoized
   const currentThread = useMemo(() => {
@@ -260,6 +310,8 @@ export function ChatProvider({
       const { threads, threadCommMap } = await fetchThreads({ medplum, threadsQuery });
       setThreads(threads);
       setThreadCommMap(threadCommMap);
+      const imageMap = await fetchThreadsImages({ medplum, threads, threadCommMap });
+      setThreadImageMap(imageMap);
     } catch (err) {
       onError?.(err as Error);
     } finally {

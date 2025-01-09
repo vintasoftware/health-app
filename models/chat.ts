@@ -1,5 +1,5 @@
-import { MedplumClient, ProfileResource } from "@medplum/core";
-import { Communication, Practitioner, Reference } from "@medplum/fhirtypes";
+import { ProfileResource } from "@medplum/core";
+import { Communication } from "@medplum/fhirtypes";
 
 export class ChatMessage {
   readonly originalCommunication: Communication;
@@ -52,30 +52,35 @@ export class ChatMessage {
 export class Thread {
   readonly messages: ChatMessage[];
   readonly originalCommunication: Communication;
-  static imageURLMap = new Map<string, string>();
-  static loadImageURLPromiseMap = new Map<string, Promise<void>>();
+  readonly avatarURL: string | undefined;
 
   constructor({
     messages,
     originalCommunication,
+    avatarURL,
   }: {
     messages: ChatMessage[];
     originalCommunication: Communication;
+    avatarURL: string | undefined;
   }) {
     this.messages = [...messages].sort((a, b) => a.messageOrder - b.messageOrder);
     this.originalCommunication = originalCommunication;
+    this.avatarURL = avatarURL;
   }
 
   static fromCommunication({
     comm,
     threadMessageComms,
+    avatarURL,
   }: {
     comm: Communication;
     threadMessageComms: Communication[];
+    avatarURL: string | undefined;
   }): Thread {
     return new Thread({
       messages: threadMessageComms.map((comm) => ChatMessage.fromCommunication({ comm })),
       originalCommunication: comm,
+      avatarURL,
     });
   }
 
@@ -116,6 +121,10 @@ export class Thread {
       ?.originalCommunication;
   }
 
+  get lastPatientCommunication(): Communication | undefined {
+    return this.messages.findLast((msg) => msg.senderType === "Patient")?.originalCommunication;
+  }
+
   get practitionerName(): string | undefined {
     return this.lastProviderCommunication?.sender?.display;
   }
@@ -124,26 +133,11 @@ export class Thread {
     return this.lastProviderCommunication?.sender?.reference;
   }
 
-  get imageURL(): string | undefined {
-    return this.practitionerId ? Thread.imageURLMap.get(this.practitionerId) : undefined;
+  get patientName(): string | undefined {
+    return this.originalCommunication.subject?.display;
   }
 
-  async loadImageURL({ medplum }: { medplum: MedplumClient }) {
-    // Load the image URL for the thread if it hasn't been loaded yet and it isn't already loading
-    if (!this.practitionerId) return;
-    if (Thread.imageURLMap.has(this.practitionerId)) return;
-    if (Thread.loadImageURLPromiseMap.has(this.practitionerId)) return;
-
-    try {
-      const practitioner = await medplum.readReference(
-        this.lastProviderCommunication?.sender as Reference<Practitioner>,
-      );
-      if (practitioner.photo?.[0]?.url) {
-        const imageUrl = practitioner.photo[0].url;
-        Thread.imageURLMap.set(this.practitionerId, imageUrl);
-      }
-    } catch {
-      // Ignore errors from fetching practitioner image
-    }
+  get patientId(): string | undefined {
+    return this.originalCommunication.subject?.reference;
   }
 }

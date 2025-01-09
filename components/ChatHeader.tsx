@@ -59,7 +59,7 @@ export function ChatHeader({ currentThread }: { currentThread: Thread }) {
         <View className="flex-1 flex-row items-center gap-3">
           <Avatar size="md" className="border-2 border-primary-200">
             <Icon as={UserRound} size="lg" className="stroke-white" />
-            <AvatarImage source={{ uri: currentThread.imageURL }} />
+            <AvatarImage source={{ uri: currentThread.avatarURL }} />
           </Avatar>
           <View className="flex-col">
             <Text size="md" bold className="text-typography-900">
