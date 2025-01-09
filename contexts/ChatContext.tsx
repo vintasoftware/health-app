@@ -172,9 +172,7 @@ interface ChatContextType {
   // Current thread & messages
   currentThread: Thread | null;
   selectThread: (threadId: string) => void;
-  message: string;
-  setMessage: (message: string) => void;
-  sendMessage: () => Promise<void>;
+  sendMessage: (message: string) => Promise<void>;
   markMessageAsRead: (messageId: string) => Promise<void>;
 }
 
@@ -200,7 +198,6 @@ export function ChatProvider({
   const [threads, setThreads] = useState<Communication[]>([]);
   const [threadCommMap, setThreadCommMap] = useState<Map<string, Communication[]>>(new Map());
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
-  const [message, setMessage] = useState("");
   const [reconnecting, setReconnecting] = useState(false);
   const [connectedOnce, setConnectedOnce] = useState(false);
   const [isLoadingThreads, setIsLoadingThreads] = useState(true);
@@ -351,7 +348,6 @@ export function ChatProvider({
       setThreads([]);
       setThreadCommMap(new Map());
       setCurrentThreadId(null);
-      setMessage("");
       setReconnecting(false);
       setConnectedOnce(false);
       setIsLoadingThreads(true);
@@ -389,32 +385,34 @@ export function ChatProvider({
     [medplum, profile],
   );
 
-  const sendMessage = useCallback(async () => {
-    if (!message.trim() || !profile || !currentThreadId) return;
+  const sendMessage = useCallback(
+    async (message: string) => {
+      if (!message.trim() || !profile || !currentThreadId) return;
 
-    // Create the message
-    const newCommunication = await createThreadMessageComm({
-      medplum,
-      profile,
-      message,
-      threadId: currentThreadId,
-    });
+      // Create the message
+      const newCommunication = await createThreadMessageComm({
+        medplum,
+        profile,
+        message,
+        threadId: currentThreadId,
+      });
 
-    // Touch the thread last changed date
-    // to ensure useSubscription will trigger for message receivers
-    await touchThreadLastChanged({
-      medplum,
-      threadId: currentThreadId,
-      value: newCommunication.sent!,
-    });
+      // Touch the thread last changed date
+      // to ensure useSubscription will trigger for message receivers
+      await touchThreadLastChanged({
+        medplum,
+        threadId: currentThreadId,
+        value: newCommunication.sent!,
+      });
 
-    // Update the thread messages
-    setThreadCommMap((prev) => {
-      const existing = prev.get(currentThreadId) || [];
-      return new Map([...prev, [currentThreadId, syncResourceArray(existing, newCommunication)]]);
-    });
-    setMessage("");
-  }, [message, profile, currentThreadId, medplum]);
+      // Update the thread messages
+      setThreadCommMap((prev) => {
+        const existing = prev.get(currentThreadId) || [];
+        return new Map([...prev, [currentThreadId, syncResourceArray(existing, newCommunication)]]);
+      });
+    },
+    [profile, currentThreadId, medplum],
+  );
 
   const markMessageAsRead = useCallback(
     async (messageId: string) => {
@@ -457,8 +455,6 @@ export function ChatProvider({
     createThread,
     currentThread,
     selectThread,
-    message,
-    setMessage,
     sendMessage,
     markMessageAsRead,
   };

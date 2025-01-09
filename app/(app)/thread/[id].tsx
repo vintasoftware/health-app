@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ChatHeader } from "@/components/ChatHeader";
@@ -10,30 +10,37 @@ import { useChat } from "@/contexts/ChatContext";
 
 export default function ThreadPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const {
-    isLoadingMessages,
-    message,
-    setMessage,
-    sendMessage,
-    markMessageAsRead,
-    selectThread,
-    currentThread,
-  } = useChat();
+  const { isLoadingMessages, sendMessage, markMessageAsRead, selectThread, currentThread } =
+    useChat();
+  const [message, setMessage] = useState("");
 
   // Set current thread when page loads
   useEffect(() => {
-    selectThread(id);
-  }, [id, selectThread]);
+    if (currentThread?.id !== id) {
+      selectThread(id);
+    }
+  }, [id, selectThread, currentThread]);
 
-  // Mark all unread messages as read
+  // Mark all unread messages as read when the thread is loaded
   useEffect(() => {
     if (!currentThread) return;
+    if (currentThread.id !== id) return;
     currentThread.messages.forEach((message) => {
       if (!message.read) {
         markMessageAsRead(message.id);
       }
     });
-  }, [currentThread, markMessageAsRead]);
+  }, [currentThread, id, markMessageAsRead]);
+
+  const handleSendMessage = useCallback(async () => {
+    const existingMessage = message;
+    setMessage("");
+    try {
+      await sendMessage(existingMessage);
+    } catch {
+      setMessage(existingMessage);
+    }
+  }, [message, sendMessage]);
 
   if (!currentThread) {
     return (
@@ -47,7 +54,7 @@ export default function ThreadPage() {
     <SafeAreaView className="flex-1 bg-background-50">
       <ChatHeader currentThread={currentThread} />
       <ChatMessageList messages={currentThread.messages} loading={isLoadingMessages} />
-      <ChatMessageInput message={message} setMessage={setMessage} onSend={sendMessage} />
+      <ChatMessageInput message={message} setMessage={setMessage} onSend={handleSendMessage} />
     </SafeAreaView>
   );
 }

@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 import { ChevronLeftIcon, UserRound } from "lucide-react-native";
+import { useMemo } from "react";
 import { View } from "react-native";
 
 import { Avatar, AvatarImage } from "@/components/ui/avatar";

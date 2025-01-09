@@ -203,15 +203,9 @@ describe("useChat (messages)", () => {
       expect(result.current.isLoadingMessages).toBe(false);
     });
 
-    // Set message and send
-    act(() => {
-      result.current.setMessage("New message");
-    });
-
-    expect(result.current.message).toBe("New message");
-
+    // Send message
     await act(async () => {
-      await result.current.sendMessage();
+      await result.current.sendMessage("New message");
     });
 
     // Verify message was created
@@ -256,10 +250,12 @@ describe("useChat (messages)", () => {
       expect(result.current.isLoadingMessages).toBe(false);
     });
 
+    // Send empty message
     await act(async () => {
-      await result.current.sendMessage();
+      await result.current.sendMessage("");
     });
 
+    // Verify message was not created
     expect(createSpy).not.toHaveBeenCalled();
   });
 
@@ -436,7 +432,6 @@ describe("useChat (messages)", () => {
 
     // Verify state is reset
     expect(result.current.currentThread).toBeNull();
-    expect(result.current.message).toBe("");
   });
 
   test("Handles WebSocket disconnection and reconnection", async () => {
@@ -602,11 +597,8 @@ describe("useChat (messages)", () => {
     });
 
     // Send a new message
-    act(() => {
-      result.current.setMessage("New message");
-    });
     await act(async () => {
-      await result.current.sendMessage();
+      await result.current.sendMessage("New message");
     });
 
     // Wait for messages to update
