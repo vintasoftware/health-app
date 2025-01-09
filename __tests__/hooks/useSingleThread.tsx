@@ -408,7 +408,6 @@ describe("useSingleThread", () => {
     expect(result.current.thread?.messages[1].text).toBe("Hi there");
 
     // Change the mock
-    // Mock the search implementation for messages of mockThread
     searchSpy.mockResolvedValue({
       resourceType: "Bundle",
       type: "searchset",
