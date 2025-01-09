@@ -4,7 +4,9 @@ import { MockClient, MockSubscriptionManager } from "@medplum/mock";
 import { MedplumProvider } from "@medplum/react-hooks";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 
-import { ChatProvider, useChat } from "@/contexts/ChatContext";
+import { ChatProvider } from "@/contexts/ChatContext";
+import { useChatConnectionState } from "@/hooks/useChatConnectionState";
+import { useThreads } from "@/hooks/useThreads";
 import { getQueryString } from "@/utils/url";
 
 const mockPatient: Patient = {
@@ -88,7 +90,7 @@ async function createCommunicationSubBundle(communication: Communication): Promi
   };
 }
 
-describe("useChat (threads)", () => {
+describe("useThreads", () => {
   async function setup(
     profile: Patient | Practitioner = mockPatient,
   ): Promise<{ medplum: MockClient; subManager: MockSubscriptionManager }> {
@@ -164,16 +166,16 @@ describe("useChat (threads)", () => {
       ],
     });
 
-    const { result } = renderHook(() => useChat(), {
+    const { result } = renderHook(() => useThreads(), {
       wrapper: createWrapper(medplum),
     });
 
     // Initially should be loading
-    expect(result.current.isLoadingThreads).toBe(true);
+    expect(result.current.isLoading).toBe(true);
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(result.current.isLoadingThreads).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
     // Verify search was called correctly
@@ -223,12 +225,12 @@ describe("useChat (threads)", () => {
       ],
     });
 
-    const { result } = renderHook(() => useChat(), {
+    const { result } = renderHook(() => useThreads(), {
       wrapper: createWrapper(medplum),
     });
 
     await waitFor(() => {
-      expect(result.current.isLoadingThreads).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
     expect(result.current.threads).toEqual([]);
@@ -239,12 +241,12 @@ describe("useChat (threads)", () => {
     const { medplum } = await setup(mockPractitioner);
     const searchSpy = jest.spyOn(medplum, "search");
 
-    const { result } = renderHook(() => useChat(), {
+    const { result } = renderHook(() => useThreads(), {
       wrapper: createWrapper(medplum),
     });
 
     await waitFor(() => {
-      expect(result.current.isLoadingThreads).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
     expect(searchSpy).toHaveBeenCalledWith(
@@ -265,12 +267,12 @@ describe("useChat (threads)", () => {
     const { medplum } = await setup();
     const createSpy = jest.spyOn(medplum, "createResource");
 
-    const { result } = renderHook(() => useChat(), {
+    const { result } = renderHook(() => useThreads(), {
       wrapper: createWrapper(medplum),
     });
 
     await waitFor(() => {
-      expect(result.current.isLoadingThreads).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
     const newThreadId = await act(async () => {
@@ -308,12 +310,12 @@ describe("useChat (threads)", () => {
   test("Prevents non-patient from creating thread", async () => {
     const { medplum } = await setup(mockPractitioner);
 
-    const { result } = renderHook(() => useChat(), {
+    const { result } = renderHook(() => useThreads(), {
       wrapper: createWrapper(medplum),
     });
 
     await waitFor(() => {
-      expect(result.current.isLoadingThreads).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
     await expect(result.current.createThread("New Thread")).rejects.toThrow(
@@ -325,12 +327,12 @@ describe("useChat (threads)", () => {
     const { medplum } = await setup();
     const createSpy = jest.spyOn(medplum, "createResource");
 
-    const { result } = renderHook(() => useChat(), {
+    const { result } = renderHook(() => useThreads(), {
       wrapper: createWrapper(medplum),
     });
 
     await waitFor(() => {
-      expect(result.current.isLoadingThreads).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
     const threadId = await result.current.createThread("   ");
@@ -400,12 +402,12 @@ describe("useChat (threads)", () => {
       ],
     });
 
-    const { result } = renderHook(() => useChat(), {
+    const { result } = renderHook(() => useThreads(), {
       wrapper: createWrapper(medplum),
     });
 
     await waitFor(() => {
-      expect(result.current.isLoadingThreads).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
     // Verify threads are ordered by last activity (message sent time or thread creation time)
@@ -472,13 +474,16 @@ describe("useChat (threads)", () => {
       ],
     });
 
-    const { result } = renderHook(() => useChat(), {
+    const { result } = renderHook(() => useThreads(), {
+      wrapper: createWrapper(medplum),
+    });
+    const { result: connectionResult } = renderHook(() => useChatConnectionState(), {
       wrapper: createWrapper(medplum),
     });
 
     // Wait for initial load
     await waitFor(() => {
-      expect(result.current.isLoadingThreads).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
     // Emit that subscription is connected
@@ -491,7 +496,7 @@ describe("useChat (threads)", () => {
 
     // Wait for connectedOnce to be true
     await waitFor(() => {
-      expect(result.current.connectedOnce).toBe(true);
+      expect(connectionResult.current.connectedOnce).toBe(true);
     });
 
     // Create a new message in an existing thread
@@ -565,13 +570,13 @@ describe("useChat (threads)", () => {
       ],
     });
 
-    const { result } = renderHook(() => useChat(), {
+    const { result } = renderHook(() => useThreads(), {
       wrapper: createWrapper(medplum),
     });
 
     // Wait for initial load
     await waitFor(() => {
-      expect(result.current.isLoadingThreads).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
     // Verify initial threads are loaded
@@ -593,7 +598,7 @@ describe("useChat (threads)", () => {
 
     // Wait for loading to complete with new profile
     await waitFor(() => {
-      expect(result.current.isLoadingThreads).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
     // Verify threads are cleared
@@ -607,17 +612,20 @@ describe("useChat (threads)", () => {
     const { medplum, subManager } = await setup();
     const searchSpy = jest.spyOn(medplum, "search");
 
-    const { result } = renderHook(() => useChat(), {
+    const { result } = renderHook(() => useThreads(), {
       wrapper: createWrapper(medplum, {
         onWebSocketClose: onWebSocketCloseMock,
         onWebSocketOpen: onWebSocketOpenMock,
         onSubscriptionConnect: onSubscriptionConnectMock,
       }),
     });
+    const { result: connectionResult } = renderHook(() => useChatConnectionState(), {
+      wrapper: createWrapper(medplum),
+    });
 
     // Wait for initial load
     await waitFor(() => {
-      expect(result.current.isLoadingThreads).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
     // Simulate WebSocket disconnection
@@ -627,7 +635,7 @@ describe("useChat (threads)", () => {
 
     // Wait for reconnecting state to update
     await waitFor(() => {
-      expect(result.current.reconnecting).toBe(true);
+      expect(connectionResult.current.reconnecting).toBe(true);
     });
 
     // Check close callback was called
@@ -676,14 +684,14 @@ describe("useChat (threads)", () => {
     });
 
     // Check reconnecting state was updated
-    expect(result.current.reconnecting).toBe(false);
+    expect(connectionResult.current.reconnecting).toBe(false);
 
     // Check subscription connect callback was called
     expect(onSubscriptionConnectMock).toHaveBeenCalledTimes(1);
 
     // Wait for reconnection and thread refresh
     await waitFor(() => {
-      expect(result.current.isLoadingThreads).toBe(false);
+      expect(result.current.isLoading).toBe(false);
       const newThreadInList = result.current.threads.find((t) => t.id === "thread-new");
       expect(newThreadInList).toBeDefined();
       expect(newThreadInList?.topic).toBe("Thread created while disconnected");
@@ -694,13 +702,13 @@ describe("useChat (threads)", () => {
     const onErrorMock = jest.fn();
     const { medplum, subManager } = await setup();
 
-    const { result } = renderHook(() => useChat(), {
+    const { result } = renderHook(() => useThreads(), {
       wrapper: createWrapper(medplum, { onError: onErrorMock }),
     });
 
     // Wait for initial load
     await waitFor(() => {
-      expect(result.current.isLoadingThreads).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
     // Emit error event on subscription
@@ -725,16 +733,16 @@ describe("useChat (threads)", () => {
     const error = new Error("Failed to load threads");
     searchSpy.mockRejectedValue(error);
 
-    const { result } = renderHook(() => useChat(), {
+    const { result } = renderHook(() => useThreads(), {
       wrapper: createWrapper(medplum, { onError: onErrorMock }),
     });
 
     // Initially should be loading
-    expect(result.current.isLoadingThreads).toBe(true);
+    expect(result.current.isLoading).toBe(true);
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(result.current.isLoadingThreads).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
     // Verify the onError callback was called with the error

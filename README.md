@@ -105,7 +105,8 @@ npm run prepare
 - `/app` - Main application code using Expo Router for file-based routing
 - `/components` - Reusable React components
 - `/components/ui` - gluestack-ui v2 components
-- `/contexts` - React context providers and hooks for business logic
+- `/contexts` - Global shared state and business logic, real-time chat logic is here
+- `/hooks` - React hooks for business logic, chat hooks are here
 - `/models` - Business logic models
 - `/utils` - Utility functions
 - `/__tests__` - Test files

@@ -7,10 +7,10 @@ import { CreateThreadModal } from "@/components/CreateThreadModal";
 import { ThreadList } from "@/components/ThreadList";
 import { ThreadListHeader } from "@/components/ThreadListHeader";
 import { Spinner } from "@/components/ui/spinner";
-import { useChat } from "@/contexts/ChatContext";
+import { useThreads } from "@/hooks/useThreads";
 
 export default function Index() {
-  const { threads, isLoadingThreads, createThread } = useChat();
+  const { threads, isLoading, createThread } = useThreads();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const medplum = useMedplum();
   const router = useRouter();
@@ -20,7 +20,7 @@ export default function Index() {
     router.replace("/sign-in");
   }, [medplum, router]);
 
-  if (isLoadingThreads) {
+  if (isLoading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center">
         <Spinner size="large" />
