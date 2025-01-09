@@ -694,7 +694,7 @@ describe("useThreads", () => {
       expect(result.current.isLoading).toBe(false);
       const newThreadInList = result.current.threads.find((t) => t.id === "thread-new");
       expect(newThreadInList).toBeDefined();
-      expect(newThreadInList?.topic).toBe("Thread created while disconnected");
+      expect(newThreadInList!.topic).toBe("Thread created while disconnected");
     });
   });
 

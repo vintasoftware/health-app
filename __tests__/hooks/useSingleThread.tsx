@@ -176,11 +176,11 @@ describe("useSingleThread", () => {
 
     // Check messages are displayed
     expect(result.current.thread).toBeDefined();
-    expect(result.current.thread?.messages).toHaveLength(2);
-    expect(result.current.thread?.messages[0].text).toBe("Hello");
-    expect(result.current.thread?.messages[0].senderType).toBe("Patient");
-    expect(result.current.thread?.messages[1].text).toBe("Hi there");
-    expect(result.current.thread?.messages[1].senderType).toBe("Practitioner");
+    expect(result.current.thread!.messages).toHaveLength(2);
+    expect(result.current.thread!.messages[0].text).toBe("Hello");
+    expect(result.current.thread!.messages[0].senderType).toBe("Patient");
+    expect(result.current.thread!.messages[1].text).toBe("Hi there");
+    expect(result.current.thread!.messages[1].senderType).toBe("Practitioner");
   });
 
   test("Sends new message", async () => {
@@ -222,9 +222,9 @@ describe("useSingleThread", () => {
 
     // Verify the new message appears in the list
     expect(result.current.thread).toBeDefined();
-    expect(result.current.thread?.messages).toHaveLength(3);
-    expect(result.current.thread?.messages[2].text).toBe("New message");
-    expect(result.current.thread?.messages[2].senderType).toBe("Patient");
+    expect(result.current.thread!.messages).toHaveLength(3);
+    expect(result.current.thread!.messages[2].text).toBe("New message");
+    expect(result.current.thread!.messages[2].senderType).toBe("Patient");
   });
 
   test("Does not send empty message", async () => {
@@ -324,8 +324,8 @@ describe("useSingleThread", () => {
     // Verify the new message appears in real-time
     await waitFor(() => {
       expect(result.current.thread).toBeDefined();
-      expect(result.current.thread?.messages).toHaveLength(3);
-      expect(result.current.thread?.messages[2].text).toBe("Real-time incoming message");
+      expect(result.current.thread!.messages).toHaveLength(3);
+      expect(result.current.thread!.messages[2].text).toBe("Real-time incoming message");
     });
   });
 
@@ -379,8 +379,8 @@ describe("useSingleThread", () => {
     // Verify the message was updated
     await waitFor(() => {
       expect(result.current.thread).toBeDefined();
-      expect(result.current.thread?.messages[1].text).toBe("Updated message");
-      expect(result.current.thread?.messages).toHaveLength(2);
+      expect(result.current.thread!.messages[1].text).toBe("Updated message");
+      expect(result.current.thread!.messages).toHaveLength(2);
     });
   });
 
@@ -403,9 +403,9 @@ describe("useSingleThread", () => {
 
     // Verify initial messages are loaded
     expect(result.current.thread).toBeDefined();
-    expect(result.current.thread?.messages).toHaveLength(2);
-    expect(result.current.thread?.messages[0].text).toBe("Hello");
-    expect(result.current.thread?.messages[1].text).toBe("Hi there");
+    expect(result.current.thread!.messages).toHaveLength(2);
+    expect(result.current.thread!.messages[0].text).toBe("Hello");
+    expect(result.current.thread!.messages[1].text).toBe("Hi there");
 
     // Change the mock
     searchSpy.mockResolvedValue({
@@ -482,7 +482,7 @@ describe("useSingleThread", () => {
 
     // New message should not be in chat yet
     expect(result.current.thread).toBeDefined();
-    expect(result.current.thread?.messages).not.toHaveLength(3);
+    expect(result.current.thread!.messages).not.toHaveLength(3);
 
     // Emit subscription connected event
     act(() => {
@@ -587,9 +587,9 @@ describe("useSingleThread", () => {
       const lastMessage =
         result.current.thread?.messages[result.current.thread?.messages.length - 1];
       expect(lastMessage).toBeDefined();
-      expect(lastMessage?.sentAt).toBeDefined();
-      expect(lastMessage?.received).toBeUndefined();
-      expect(lastMessage?.read).toBe(false);
+      expect(lastMessage!.sentAt).toBeDefined();
+      expect(lastMessage!.received).toBeUndefined();
+      expect(lastMessage!.read).toBe(false);
     });
   });
 
@@ -621,8 +621,8 @@ describe("useSingleThread", () => {
     await waitFor(() => {
       const message = result.current.thread?.messages.find((m) => m.id === "msg-3");
       expect(message).toBeDefined();
-      expect(message?.received).toBeDefined();
-      expect(message?.read).toBe(false);
+      expect(message!.received).toBeDefined();
+      expect(message!.read).toBe(false);
     });
   });
 
@@ -663,9 +663,9 @@ describe("useSingleThread", () => {
       const lastMessage =
         result.current.thread?.messages[result.current.thread?.messages.length - 1];
       expect(lastMessage).toBeDefined();
-      expect(lastMessage?.text).toBe("Test received status");
-      expect(lastMessage?.received).toBeDefined();
-      expect(lastMessage?.read).toBe(false);
+      expect(lastMessage!.text).toBe("Test received status");
+      expect(lastMessage!.received).toBeDefined();
+      expect(lastMessage!.read).toBe(false);
     });
   });
 
@@ -696,7 +696,7 @@ describe("useSingleThread", () => {
     await waitFor(() => {
       const message = result.current.thread?.messages.find((m) => m.id === unreadMessage!.id);
       expect(message).toBeDefined();
-      expect(message?.read).toBe(true);
+      expect(message!.read).toBe(true);
     });
   });
 
@@ -725,7 +725,7 @@ describe("useSingleThread", () => {
       expect(result.current.isLoading).toBe(false);
       const message = result.current.thread?.messages.find((m) => m.id === newMessage.id);
       expect(message).toBeDefined();
-      expect(message?.read).toBe(true);
+      expect(message!.read).toBe(true);
     });
 
     // Mark message as read
@@ -740,7 +740,7 @@ describe("useSingleThread", () => {
     await waitFor(() => {
       const message = result.current.thread?.messages.find((m) => m.id === newMessage.id);
       expect(message).toBeDefined();
-      expect(message?.read).toBe(true);
+      expect(message!.read).toBe(true);
     });
   });
 
@@ -770,7 +770,7 @@ describe("useSingleThread", () => {
     await waitFor(() => {
       const message = result.current.thread?.messages.find((m) => m.id === unreadMessage!.id);
       expect(message).toBeDefined();
-      expect(message?.read).toBe(false);
+      expect(message!.read).toBe(false);
     });
   });
 });
