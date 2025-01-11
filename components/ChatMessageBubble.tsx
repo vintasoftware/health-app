@@ -1,29 +1,39 @@
 import { useMedplumProfile } from "@medplum/react-hooks";
+import { UserRound } from "lucide-react-native";
 import { View } from "react-native";
 
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import type { ChatMessage } from "@/models/chat";
 import { formatTime } from "@/utils/datetime";
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
+  avatarURL?: string | null;
 }
 
-export function ChatMessageBubble({ message: msg }: ChatMessageBubbleProps) {
+export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps) {
   const profile = useMedplumProfile();
 
-  const isCurrentUser = msg.senderType === profile?.resourceType;
+  const isPatientMessage = message.senderType === "Patient";
+  const isCurrentUser = message.senderType === profile?.resourceType;
   const wrapperAlignment = isCurrentUser ? "self-end" : "self-start";
-  const bubbleColor = isCurrentUser
-    ? "bg-primary-500"
-    : "bg-background-0 border border-outline-100";
-  const textColor = isCurrentUser ? "text-typography-0" : "text-typography-900";
+  const bubbleColor = isPatientMessage ? "bg-secondary-100" : "bg-tertiary-200";
+  const borderColor = isPatientMessage ? "border-secondary-200" : "border-tertiary-300";
+  const flexDirection = isCurrentUser ? "flex-row-reverse" : "flex-row";
 
   return (
     <View className={`mx-2 max-w-[80%] p-2 ${wrapperAlignment}`}>
-      <View className={`rounded-xl p-3 ${bubbleColor}`}>
-        <Text className={textColor}>{msg.text}</Text>
-        <Text className={`mt-1 text-sm opacity-70 ${textColor}`}>{formatTime(msg.sentAt)}</Text>
+      <View className={`${flexDirection} items-end gap-2`}>
+        <Avatar size="sm" className="border border-primary-200">
+          <Icon as={UserRound} size="sm" className="stroke-white" />
+          {avatarURL && <AvatarImage source={{ uri: avatarURL }} />}
+        </Avatar>
+        <View className={`rounded-xl border p-3 ${bubbleColor} ${borderColor}`}>
+          <Text className="text-typography-900">{message.text}</Text>
+          <Text className="text-xs text-typography-600">{formatTime(message.sentAt)}</Text>
+        </View>
       </View>
     </View>
   );

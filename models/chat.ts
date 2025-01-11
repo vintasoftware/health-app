@@ -1,5 +1,5 @@
 import { ProfileResource } from "@medplum/core";
-import { Communication } from "@medplum/fhirtypes";
+import { Communication, Patient, Practitioner, Reference } from "@medplum/fhirtypes";
 
 export class ChatMessage {
   readonly originalCommunication: Communication;
@@ -47,40 +47,37 @@ export class ChatMessage {
   get read(): boolean {
     return this.originalCommunication.status === "completed";
   }
+
+  get avatarRef(): Reference<Patient | Practitioner> | undefined {
+    return this.originalCommunication.sender as Reference<Patient | Practitioner> | undefined;
+  }
 }
 
 export class Thread {
   readonly messages: ChatMessage[];
   readonly originalCommunication: Communication;
-  readonly avatarURL: string | undefined;
 
   constructor({
     messages,
     originalCommunication,
-    avatarURL,
   }: {
     messages: ChatMessage[];
     originalCommunication: Communication;
-    avatarURL: string | undefined;
   }) {
     this.messages = [...messages].sort((a, b) => a.messageOrder - b.messageOrder);
     this.originalCommunication = originalCommunication;
-    this.avatarURL = avatarURL;
   }
 
   static fromCommunication({
     comm,
     threadMessageComms,
-    avatarURL,
   }: {
     comm: Communication;
     threadMessageComms: Communication[];
-    avatarURL: string | undefined;
   }): Thread {
     return new Thread({
       messages: threadMessageComms.map((comm) => ChatMessage.fromCommunication({ comm })),
       originalCommunication: comm,
-      avatarURL,
     });
   }
 
@@ -129,15 +126,27 @@ export class Thread {
     return this.lastProviderCommunication?.sender?.display;
   }
 
-  get practitionerId(): string | undefined {
-    return this.lastProviderCommunication?.sender?.reference;
+  get practitionerRef(): Reference<Practitioner> | undefined {
+    return this.lastProviderCommunication?.sender as Reference<Practitioner> | undefined;
   }
 
   get patientName(): string | undefined {
     return this.originalCommunication.subject?.display;
   }
 
-  get patientId(): string | undefined {
-    return this.originalCommunication.subject?.reference;
+  get patientRef(): Reference<Patient> | undefined {
+    return this.originalCommunication.subject as Reference<Patient> | undefined;
+  }
+
+  getAvatarRef({
+    profile,
+  }: {
+    profile: ProfileResource | undefined;
+  }): Reference<Patient | Practitioner> | undefined {
+    if (!profile) {
+      return undefined;
+    }
+    // If the profile is a patient, we need to get the practitioner's avatar, else get the patient's avatar
+    return profile.resourceType === "Patient" ? this.practitionerRef : this.patientRef;
   }
 }

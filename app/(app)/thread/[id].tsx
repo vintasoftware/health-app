@@ -1,3 +1,4 @@
+import { useMedplumContext } from "@medplum/react-hooks";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -6,16 +7,21 @@ import { ChatHeader } from "@/components/ChatHeader";
 import { ChatMessageInput } from "@/components/ChatMessageInput";
 import { ChatMessageList } from "@/components/ChatMessageList";
 import { Spinner } from "@/components/ui/spinner";
+import { useAvatars } from "@/hooks/useAvatars";
 import { useSingleThread } from "@/hooks/useSingleThread";
 
 export default function ThreadPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { profile } = useMedplumContext();
   const { thread, isLoadingThreads, isLoading, sendMessage, markMessageAsRead } = useSingleThread({
     threadId: id,
   });
+  const { getAvatarURL, isLoading: isAvatarsLoading } = useAvatars([
+    thread?.getAvatarRef({ profile }),
+  ]);
   const [message, setMessage] = useState("");
 
-  // If nothing is loading and the thread undefined, redirect to the index page
+  // If thread is not loading and the thread undefined, redirect to the index page
   useEffect(() => {
     if (!isLoadingThreads && !isLoading && !thread) {
       router.replace("/");
@@ -43,7 +49,7 @@ export default function ThreadPage() {
     }
   }, [thread, message, sendMessage]);
 
-  if (!thread) {
+  if (!thread || isAvatarsLoading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center">
         <Spinner size="large" />
@@ -53,7 +59,7 @@ export default function ThreadPage() {
 
   return (
     <SafeAreaView className="flex-1 bg-background-50">
-      <ChatHeader currentThread={thread} />
+      <ChatHeader currentThread={thread} getAvatarURL={getAvatarURL} />
       <ChatMessageList messages={thread.messages} loading={isLoading} />
       <ChatMessageInput message={message} setMessage={setMessage} onSend={handleSendMessage} />
     </SafeAreaView>

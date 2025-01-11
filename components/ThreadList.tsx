@@ -1,3 +1,5 @@
+import { Practitioner, Reference } from "@medplum/fhirtypes";
+import { Patient } from "@medplum/fhirtypes";
 import { useMedplumContext } from "@medplum/react-hooks";
 import { useRouter } from "expo-router";
 import { PlusIcon, UserRound } from "lucide-react-native";
@@ -17,6 +19,9 @@ import { formatTime } from "@/utils/datetime";
 
 interface ThreadListProps {
   threads: Thread[];
+  getAvatarURL: (
+    reference: Reference<Patient | Practitioner> | undefined,
+  ) => string | null | undefined;
   onCreateThread?: () => void;
 }
 
@@ -24,13 +29,16 @@ function ThreadItem({
   thread,
   index,
   onPress,
+  avatarURL,
+  isPractitioner,
 }: {
   thread: Thread;
   index: number;
   onPress: () => void;
+  avatarURL: string | undefined;
+  isPractitioner: boolean;
 }) {
   const { profile } = useMedplumContext();
-  const isPractitioner = profile?.resourceType === "Practitioner";
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
@@ -41,7 +49,7 @@ function ThreadItem({
         <View className="flex-row items-center gap-3 p-4">
           <Avatar size="md" className="border-2 border-primary-200">
             <Icon as={UserRound} size="lg" className="stroke-white" />
-            <AvatarImage source={{ uri: thread.avatarURL }} />
+            <AvatarImage source={{ uri: avatarURL }} />
           </Avatar>
 
           <View className="flex-1">
@@ -78,14 +86,14 @@ function EmptyState({ onCreateThread }: { onCreateThread?: () => void }) {
 
   return (
     <View className="flex-1 items-center justify-center p-4">
-      <View className="items-center rounded-2xl border border-outline-100 bg-background-0 p-8">
-        <Text className="text-center text-lg text-typography-600">
+      <View className="items-center rounded-2xl border border-secondary-300 bg-secondary-200 p-8">
+        <Text className="text-center text-lg text-typography-900">
           No chat threads yet. {isPatient && "Start a new conversation!"}
         </Text>
         {isPatient && onCreateThread && (
           <Button
             className="mt-4"
-            variant="outline"
+            variant="solid"
             action="primary"
             size="md"
             onPress={onCreateThread}
@@ -99,8 +107,10 @@ function EmptyState({ onCreateThread }: { onCreateThread?: () => void }) {
   );
 }
 
-export function ThreadList({ threads, onCreateThread }: ThreadListProps) {
+export function ThreadList({ threads, getAvatarURL, onCreateThread }: ThreadListProps) {
   const router = useRouter();
+  const { profile } = useMedplumContext();
+  const isPractitioner = profile?.resourceType === "Practitioner";
 
   if (threads.length === 0) {
     return (
@@ -123,6 +133,8 @@ export function ThreadList({ threads, onCreateThread }: ThreadListProps) {
               thread={item}
               index={index}
               onPress={() => router.push(`/thread/${item.id}`)}
+              avatarURL={getAvatarURL(item.getAvatarRef({ profile })) ?? undefined}
+              isPractitioner={isPractitioner}
             />
           )}
           showsVerticalScrollIndicator={false}

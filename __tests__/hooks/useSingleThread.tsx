@@ -421,6 +421,7 @@ describe("useSingleThread", () => {
 
     // Wait for profile change
     await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
       expect(result.current.thread).toBeUndefined();
     });
   });
