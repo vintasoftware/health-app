@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { ScrollView } from "react-native-gesture-handler";
 
+import { useAvatars } from "@/hooks/useAvatars";
 import type { ChatMessage } from "@/models/chat";
 
 import { ChatMessageBubble } from "./ChatMessageBubble";
@@ -13,6 +14,7 @@ interface ChatMessageListProps {
 
 export function ChatMessageList({ messages, loading }: ChatMessageListProps) {
   const scrollViewRef = useRef<ScrollView>(null);
+  const { getAvatarURL } = useAvatars(messages.map((message) => message.avatarRef));
 
   return (
     <ScrollView
@@ -24,7 +26,11 @@ export function ChatMessageList({ messages, loading }: ChatMessageListProps) {
       }}
     >
       {messages.map((message) => (
-        <ChatMessageBubble key={message.id} message={message} />
+        <ChatMessageBubble
+          key={message.id}
+          message={message}
+          avatarURL={getAvatarURL(message.avatarRef)}
+        />
       ))}
       {loading && <LoadingDots />}
     </ScrollView>

@@ -12,6 +12,7 @@ import {
   ModalFooter,
   ModalHeader,
 } from "@/components/ui/modal";
+import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 
@@ -54,7 +55,7 @@ export function CreateThreadModal({ isOpen, onClose, onCreateThread }: CreateThr
         </ModalHeader>
         <ModalBody>
           <View className="gap-2">
-            <Input size="md">
+            <Input size="md" isDisabled={isCreating}>
               <InputField
                 value={topic}
                 onChangeText={setTopic}
@@ -68,8 +69,12 @@ export function CreateThreadModal({ isOpen, onClose, onCreateThread }: CreateThr
           <Button variant="outline" onPress={onClose} className="mr-2">
             <ButtonText>Cancel</ButtonText>
           </Button>
-          <Button disabled={!topic.trim() || isCreating} onPress={handleCreate}>
-            <ButtonText>Create</ButtonText>
+          <Button
+            className="min-w-[100px]"
+            disabled={!topic.trim() || isCreating}
+            onPress={handleCreate}
+          >
+            {isCreating ? <Spinner size="small" color="white" /> : <ButtonText>Create</ButtonText>}
           </Button>
         </ModalFooter>
       </ModalContent>

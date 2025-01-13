@@ -5,9 +5,10 @@ import {
   ProfileResource,
   QueryTypes,
 } from "@medplum/core";
-import { Bundle, Communication, Patient, Practitioner, Reference } from "@medplum/fhirtypes";
-import { useMedplum, useSubscription } from "@medplum/react-hooks";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { Bundle, Communication, Patient } from "@medplum/fhirtypes";
+import { useMedplumContext, useSubscription } from "@medplum/react-hooks";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { createContext } from "use-context-selector";
 
 import { Thread } from "@/models/chat";
 import { syncResourceArray } from "@/utils/array";
@@ -45,19 +46,19 @@ async function fetchThreads({
 async function updateUnreceivedCommunications({
   medplum,
   communications,
-  profileRefStr,
 }: {
   medplum: MedplumClient;
   communications: Communication[];
-  profileRefStr: string;
 }): Promise<Communication[]> {
+  const profile = medplum.getProfile();
   const newComms = communications.filter((comm) => !comm.received);
   if (newComms.length === 0) return communications;
 
   const now = new Date().toISOString();
   const updatedComms = await Promise.all(
     newComms.map((comm) => {
-      const isIncoming = getReferenceString(comm.sender as Reference) !== profileRefStr;
+      const isIncoming =
+        comm.sender && profile && getReferenceString(comm.sender) !== getReferenceString(profile);
       if (isIncoming) {
         return medplum.patchResource("Communication", comm.id!, [
           { op: "add", path: "/received", value: now },
@@ -88,59 +89,6 @@ async function fetchThreadCommunications({
       cache: "no-cache",
     },
   );
-}
-
-const imageURLCache = new Map<string, string>();
-async function fetchThreadsImages({
-  medplum,
-  threads,
-  threadCommMap,
-}: {
-  medplum: MedplumClient;
-  threads: Communication[];
-  threadCommMap: Map<string, Communication[]>;
-}): Promise<Map<string, string>> {
-  const profile = medplum.getProfile();
-  if (!profile) return new Map();
-
-  const imageMap = new Map<string, string>();
-  await Promise.all(
-    threads.map(async (comm) => {
-      // If the profile is a patient, we need to get the practitioner's avatar, else get the patient's avatar:
-      const thread = Thread.fromCommunication({
-        // convert the communication to a thread
-        comm,
-        threadMessageComms: threadCommMap.get(comm.id!) || [],
-        avatarURL: undefined,
-      });
-      const avatarRefId =
-        profile.resourceType === "Patient" ? thread.practitionerId : thread.patientId;
-      if (!avatarRefId) return;
-
-      // If already cached, set the image URL
-      const avatarURL = imageURLCache.get(avatarRefId);
-      if (avatarURL) {
-        imageMap.set(thread.id!, avatarURL);
-        return;
-      }
-
-      // Otherwise, fetch the avatar URL
-      try {
-        const avatarProfile = (await medplum.readReference({
-          type: profile.resourceType === "Patient" ? "Practitioner" : "Patient",
-          reference: avatarRefId,
-        })) satisfies Practitioner | Patient;
-        if (avatarProfile.photo?.[0]?.url) {
-          const avatarURL = avatarProfile.photo[0].url;
-          imageURLCache.set(avatarRefId, avatarURL);
-          imageMap.set(thread.id!, avatarURL);
-        }
-      } catch {
-        // Ignore readReference errors
-      }
-    }),
-  );
-  return imageMap;
 }
 
 async function createThreadComm({
@@ -214,22 +162,34 @@ async function createThreadMessageComm({
 }
 
 interface ChatContextType {
-  // Thread state
   threads: Thread[];
   isLoadingThreads: boolean;
-  isLoadingMessages: boolean;
+  isLoadingMessagesMap: Map<string, boolean>;
   connectedOnce: boolean;
   reconnecting: boolean;
   createThread: (topic: string) => Promise<string | undefined>;
-
-  // Current thread & messages
-  currentThread: Thread | null;
-  selectThread: (threadId: string) => void;
-  sendMessage: (message: string) => Promise<void>;
-  markMessageAsRead: (messageId: string) => Promise<void>;
+  receiveThread: (threadId: string) => Promise<void>;
+  sendMessage: ({ threadId, message }: { threadId: string; message: string }) => Promise<void>;
+  markMessageAsRead: ({
+    threadId,
+    messageId,
+  }: {
+    threadId: string;
+    messageId: string;
+  }) => Promise<void>;
 }
 
-const ChatContext = createContext<ChatContextType | undefined>(undefined);
+export const ChatContext = createContext<ChatContextType>({
+  threads: [],
+  isLoadingThreads: true,
+  isLoadingMessagesMap: new Map(),
+  connectedOnce: false,
+  reconnecting: false,
+  createThread: async () => undefined,
+  receiveThread: async () => {},
+  sendMessage: async () => {},
+  markMessageAsRead: async () => {},
+});
 
 interface ChatProviderProps {
   children: React.ReactNode;
@@ -246,16 +206,14 @@ export function ChatProvider({
   onSubscriptionConnect,
   onError,
 }: ChatProviderProps) {
-  const medplum = useMedplum();
+  const { medplum } = useMedplumContext();
   const [profile, setProfile] = useState(medplum.getProfile());
   const [threads, setThreads] = useState<Communication[]>([]);
   const [threadCommMap, setThreadCommMap] = useState<Map<string, Communication[]>>(new Map());
-  const [threadImageMap, setThreadImageMap] = useState<Map<string, string>>(new Map());
-  const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
   const [reconnecting, setReconnecting] = useState(false);
   const [connectedOnce, setConnectedOnce] = useState(false);
   const [isLoadingThreads, setIsLoadingThreads] = useState(true);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isLoadingMessagesMap, setIsLoadingMessagesMap] = useState<Map<string, boolean>>(new Map());
 
   // Threads memoized, sorted by threadOrder
   const threadsOut = useMemo(() => {
@@ -265,22 +223,10 @@ export function ChatProvider({
         Thread.fromCommunication({
           comm: thread,
           threadMessageComms: threadCommMap.get(thread.id!) || [],
-          avatarURL: threadImageMap.get(thread.id!),
         }),
       )
       .sort((a, b) => b.threadOrder - a.threadOrder);
-  }, [profile, threads, threadCommMap, threadImageMap]);
-
-  // Current thread memoized
-  const currentThread = useMemo(() => {
-    if (!currentThreadId || !profile) return null;
-    const thread = threadsOut.find((t) => t.id === currentThreadId);
-    if (!thread) return null;
-    return thread;
-  }, [currentThreadId, threadsOut, profile]);
-
-  // Profile reference string, useful to detect profile changes
-  const profileRefStr = useMemo(() => (profile ? getReferenceString(profile) : ""), [profile]);
+  }, [profile, threads, threadCommMap]);
 
   // Query setup for subscription
   const subscriptionQuery = useMemo(
@@ -310,8 +256,6 @@ export function ChatProvider({
       const { threads, threadCommMap } = await fetchThreads({ medplum, threadsQuery });
       setThreads(threads);
       setThreadCommMap(threadCommMap);
-      const imageMap = await fetchThreadsImages({ medplum, threads, threadCommMap });
-      setThreadImageMap(imageMap);
     } catch (err) {
       onError?.(err as Error);
     } finally {
@@ -320,15 +264,16 @@ export function ChatProvider({
   }, [medplum, profile, threadsQuery, onError]);
 
   // Fetch communications for current thread and update received timestamp
-  const receiveThreadCommunications = useCallback(
+  const receiveThread = useCallback(
     async (threadId: string) => {
       try {
-        setIsLoadingMessages(true);
+        setIsLoadingMessagesMap((prev) => {
+          return new Map([...prev, [threadId, true]]);
+        });
         let threadComms = await fetchThreadCommunications({ medplum, threadId: threadId });
         threadComms = await updateUnreceivedCommunications({
           medplum,
           communications: threadComms,
-          profileRefStr,
         });
         setThreadCommMap((prev) => {
           return new Map([...prev, [threadId, threadComms]]);
@@ -336,10 +281,12 @@ export function ChatProvider({
       } catch (err) {
         onError?.(err as Error);
       } finally {
-        setIsLoadingMessages(false);
+        setIsLoadingMessagesMap((prev) => {
+          return new Map([...prev, [threadId, false]]);
+        });
       }
     },
-    [medplum, profileRefStr, onError],
+    [medplum, onError],
   );
 
   // Subscribe to communication changes
@@ -353,9 +300,9 @@ export function ChatProvider({
         // Sync the thread
         setThreads((prev) => syncResourceArray(prev, communication));
         // Sync the thread messages
-        receiveThreadCommunications(communication.id!);
+        receiveThread(communication.id!);
       },
-      [receiveThreadCommunications],
+      [receiveThread],
     ),
     {
       onWebSocketClose: useCallback(() => {
@@ -372,21 +319,11 @@ export function ChatProvider({
           setConnectedOnce(true);
         }
         if (reconnecting) {
-          const refreshPromise = refreshThreads();
-          if (currentThreadId) {
-            refreshPromise.then(() => receiveThreadCommunications(currentThreadId));
-          }
+          refreshThreads();
           setReconnecting(false);
         }
         onSubscriptionConnect?.();
-      }, [
-        connectedOnce,
-        reconnecting,
-        onSubscriptionConnect,
-        refreshThreads,
-        currentThreadId,
-        receiveThreadCommunications,
-      ]),
+      }, [connectedOnce, reconnecting, onSubscriptionConnect, refreshThreads]),
       onError: useCallback((err: Error) => onError?.(err), [onError]),
     },
   );
@@ -399,11 +336,10 @@ export function ChatProvider({
       setProfile(latestProfile);
       setThreads([]);
       setThreadCommMap(new Map());
-      setCurrentThreadId(null);
       setReconnecting(false);
       setConnectedOnce(false);
       setIsLoadingThreads(true);
-      setIsLoadingMessages(false);
+      setIsLoadingMessagesMap(new Map());
     }
   });
 
@@ -411,15 +347,6 @@ export function ChatProvider({
   useEffect(() => {
     refreshThreads();
   }, [refreshThreads]);
-
-  // Thread selection function
-  const selectThread = useCallback(
-    (threadId: string) => {
-      setCurrentThreadId(threadId);
-      receiveThreadCommunications(threadId);
-    },
-    [receiveThreadCommunications],
-  );
 
   // CRUD functions
   const createThread = useCallback(
@@ -432,47 +359,45 @@ export function ChatProvider({
       setThreadCommMap((prev) => {
         return new Map([...prev, [newThread.id!, []]]);
       });
+
       return newThread.id;
     },
     [medplum, profile],
   );
 
   const sendMessage = useCallback(
-    async (message: string) => {
-      if (!message.trim() || !profile || !currentThreadId) return;
+    async ({ threadId, message }: { threadId: string; message: string }) => {
+      if (!message.trim() || !profile) return;
 
       // Create the message
       const newCommunication = await createThreadMessageComm({
         medplum,
         profile,
         message,
-        threadId: currentThreadId,
+        threadId: threadId,
       });
 
       // Touch the thread last changed date
       // to ensure useSubscription will trigger for message receivers
       await touchThreadLastChanged({
         medplum,
-        threadId: currentThreadId,
+        threadId: threadId,
         value: newCommunication.sent!,
       });
 
       // Update the thread messages
       setThreadCommMap((prev) => {
-        const existing = prev.get(currentThreadId) || [];
-        return new Map([...prev, [currentThreadId, syncResourceArray(existing, newCommunication)]]);
+        const existing = prev.get(threadId) || [];
+        return new Map([...prev, [threadId, syncResourceArray(existing, newCommunication)]]);
       });
     },
-    [profile, currentThreadId, medplum],
+    [profile, medplum],
   );
 
   const markMessageAsRead = useCallback(
-    async (messageId: string) => {
-      // Check if the current thread is loaded
-      if (!currentThreadId) return;
-
+    async ({ threadId, messageId }: { threadId: string; messageId: string }) => {
       // Get the message
-      const threadComms = threadCommMap.get(currentThreadId) || [];
+      const threadComms = threadCommMap.get(threadId) || [];
       const message = threadComms.find((c) => c.id === messageId);
       if (!message) return;
 
@@ -480,44 +405,35 @@ export function ChatProvider({
       if (message.status === "completed") return;
 
       // Check if the message is outgoing
-      const isOutgoing = getReferenceString(message.sender as Reference) === profileRefStr;
-      if (isOutgoing) return;
+      const isIncoming =
+        message.sender &&
+        profile &&
+        getReferenceString(message.sender) !== getReferenceString(profile);
+      if (!isIncoming) return;
 
       // Mark the message as read
       const updatedCommunication = await medplum.patchResource("Communication", messageId, [
         { op: "add", path: "/status", value: "completed" },
       ]);
       setThreadCommMap((prev) => {
-        const existing = prev.get(currentThreadId) || [];
-        return new Map([
-          ...prev,
-          [currentThreadId, syncResourceArray(existing, updatedCommunication)],
-        ]);
+        const existing = prev.get(threadId) || [];
+        return new Map([...prev, [threadId, syncResourceArray(existing, updatedCommunication)]]);
       });
     },
-    [currentThreadId, threadCommMap, medplum, profileRefStr],
+    [threadCommMap, medplum, profile],
   );
 
   const value = {
     threads: threadsOut,
     isLoadingThreads,
-    isLoadingMessages,
+    isLoadingMessagesMap,
     connectedOnce,
     reconnecting,
     createThread,
-    currentThread,
-    selectThread,
+    receiveThread,
     sendMessage,
     markMessageAsRead,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
-}
-
-export function useChat() {
-  const context = useContext(ChatContext);
-  if (!context) {
-    throw new Error("useChat must be used within a ChatProvider");
-  }
-  return context;
 }
