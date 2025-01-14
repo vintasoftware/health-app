@@ -1,5 +1,5 @@
 import { ProfileResource } from "@medplum/core";
-import { Communication, Patient, Practitioner, Reference } from "@medplum/fhirtypes";
+import { Attachment, Communication, Patient, Practitioner, Reference } from "@medplum/fhirtypes";
 
 export class ChatMessage {
   readonly originalCommunication: Communication;
@@ -20,6 +20,16 @@ export class ChatMessage {
 
   get text(): string {
     return this.originalCommunication.payload?.[0]?.contentString || "";
+  }
+
+  get attachment(): Attachment | undefined {
+    // find the first attachment in the payload and return it
+    for (const payload of this.originalCommunication.payload || []) {
+      if (payload.contentAttachment) {
+        return payload.contentAttachment;
+      }
+    }
+    return undefined;
   }
 
   get senderType(): "Patient" | "Practitioner" {

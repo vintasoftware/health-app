@@ -5,8 +5,15 @@ import {
   ProfileResource,
   QueryTypes,
 } from "@medplum/core";
-import { Bundle, Communication, Patient } from "@medplum/fhirtypes";
+import {
+  Attachment,
+  Bundle,
+  Communication,
+  CommunicationPayload,
+  Patient,
+} from "@medplum/fhirtypes";
 import { useMedplumContext, useSubscription } from "@medplum/react-hooks";
+import * as ImagePicker from "expo-image-picker";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createContext } from "use-context-selector";
 
@@ -145,18 +152,34 @@ async function createThreadMessageComm({
   profile,
   message,
   threadId,
+  attachment,
 }: {
   medplum: MedplumClient;
   profile: ProfileResource;
   message: string;
   threadId: string;
+  attachment?: Attachment;
 }): Promise<Communication> {
+  const payload: CommunicationPayload[] = [];
+
+  // Add text message if provided
+  if (message.trim()) {
+    payload.push({ contentString: message.trim() });
+  }
+
+  // Add attachment if provided
+  if (attachment) {
+    payload.push({
+      contentAttachment: attachment,
+    });
+  }
+
   return await medplum.createResource({
     resourceType: "Communication",
     status: "in-progress",
     sent: new Date().toISOString(),
     sender: createReference(profile),
-    payload: [{ contentString: message.trim() }],
+    payload,
     partOf: [{ reference: `Communication/${threadId}` }],
   } satisfies Communication);
 }
@@ -169,7 +192,15 @@ interface ChatContextType {
   reconnecting: boolean;
   createThread: (topic: string) => Promise<string | undefined>;
   receiveThread: (threadId: string) => Promise<void>;
-  sendMessage: ({ threadId, message }: { threadId: string; message: string }) => Promise<void>;
+  sendMessage: ({
+    threadId,
+    message,
+    attachment,
+  }: {
+    threadId: string;
+    message?: string;
+    attachment?: ImagePicker.ImagePickerAsset;
+  }) => Promise<void>;
   markMessageAsRead: ({
     threadId,
     messageId,
@@ -366,32 +397,58 @@ export function ChatProvider({
   );
 
   const sendMessage = useCallback(
-    async ({ threadId, message }: { threadId: string; message: string }) => {
-      if (!message.trim() || !profile) return;
+    async ({
+      threadId,
+      message,
+      attachment,
+    }: {
+      threadId: string;
+      message?: string;
+      attachment?: ImagePicker.ImagePickerAsset;
+    }) => {
+      if (!profile) return;
+      if (!message?.trim() && !attachment) return;
 
-      // Create the message
-      const newCommunication = await createThreadMessageComm({
-        medplum,
-        profile,
-        message,
-        threadId: threadId,
-      });
+      try {
+        let uploadedAttachment;
+        if (attachment) {
+          // Upload the file to Medplum
+          const response = await fetch(attachment.uri);
+          const blob = await response.blob();
+          uploadedAttachment = await medplum.createAttachment({
+            data: blob,
+            filename: attachment.fileName ?? undefined,
+            contentType: attachment.mimeType ?? "application/octet-stream",
+          });
+        }
 
-      // Touch the thread last changed date
-      // to ensure useSubscription will trigger for message receivers
-      await touchThreadLastChanged({
-        medplum,
-        threadId: threadId,
-        value: newCommunication.sent!,
-      });
+        // Create the message
+        const newCommunication = await createThreadMessageComm({
+          medplum,
+          profile,
+          message: message ?? "",
+          threadId,
+          attachment: uploadedAttachment,
+        });
 
-      // Update the thread messages
-      setThreadCommMap((prev) => {
-        const existing = prev.get(threadId) || [];
-        return new Map([...prev, [threadId, syncResourceArray(existing, newCommunication)]]);
-      });
+        // Touch the thread last changed date
+        await touchThreadLastChanged({
+          medplum,
+          threadId,
+          value: newCommunication.sent!,
+        });
+
+        // Update the thread messages
+        setThreadCommMap((prev) => {
+          const existing = prev.get(threadId) || [];
+          return new Map([...prev, [threadId, syncResourceArray(existing, newCommunication)]]);
+        });
+      } catch (err) {
+        onError?.(err as Error);
+        throw err;
+      }
     },
-    [profile, medplum],
+    [profile, medplum, onError],
   );
 
   const markMessageAsRead = useCallback(
