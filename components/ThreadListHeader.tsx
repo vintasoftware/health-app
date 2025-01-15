@@ -28,7 +28,7 @@ export function ThreadListHeader({ onLogout, onCreateThread }: ThreadListHeaderP
 
         <View className="flex-row items-center gap-2">
           {isPatient && onCreateThread && (
-            <Button variant="outline" action="primary" size="sm" onPress={onCreateThread}>
+            <Button variant="outline" action="primary" size="sm" onPress={() => onCreateThread()}>
               <ButtonIcon as={PlusIcon} size="sm" />
               <ButtonText>New Thread</ButtonText>
             </Button>

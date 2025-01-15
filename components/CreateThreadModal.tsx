@@ -66,7 +66,7 @@ export function CreateThreadModal({ isOpen, onClose, onCreateThread }: CreateThr
           </View>
         </ModalBody>
         <ModalFooter>
-          <Button variant="outline" onPress={onClose} className="mr-2">
+          <Button variant="outline" onPress={() => onClose()} className="mr-2">
             <ButtonText>Cancel</ButtonText>
           </Button>
           <Button

@@ -26,7 +26,7 @@ export function ChatMessageInput({
       <Button
         variant="outline"
         size="md"
-        onPress={onAttachment}
+        onPress={() => onAttachment()}
         disabled={isAttaching}
         className="mr-3 aspect-square border-outline-300 p-2 disabled:bg-background-300"
       >
@@ -44,7 +44,7 @@ export function ChatMessageInput({
       <Button
         variant="solid"
         size="md"
-        onPress={onSend}
+        onPress={() => onSend()}
         disabled={!message.trim() || isSending}
         className="ml-3 aspect-square rounded-full bg-success-500 p-2 disabled:bg-background-300"
       >

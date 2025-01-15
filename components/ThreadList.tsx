@@ -43,7 +43,7 @@ function ThreadItem({
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
       <Pressable
-        onPress={onPress}
+        onPress={() => onPress()}
         className="overflow-hidden bg-background-0 active:bg-secondary-100"
       >
         <View className="flex-row items-center gap-3 p-4">
@@ -96,7 +96,7 @@ function EmptyState({ onCreateThread }: { onCreateThread?: () => void }) {
             variant="solid"
             action="primary"
             size="md"
-            onPress={onCreateThread}
+            onPress={() => onCreateThread()}
           >
             <ButtonIcon as={PlusIcon} size="sm" />
             <ButtonText>New Thread</ButtonText>
