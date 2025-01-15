@@ -46,3 +46,7 @@ _dev/
 
 # Cursor prompt
 .cursorrules
+
+# Pre-build files
+android/
+ios/

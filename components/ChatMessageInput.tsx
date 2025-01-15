@@ -1,34 +1,54 @@
-import { SendIcon } from "lucide-react-native";
+import { ImageIcon, SendIcon } from "lucide-react-native";
 
 import { TextareaResizable, TextareaResizableInput } from "@/components/textarea-resizable";
-import { Button } from "@/components/ui/button";
-import { Icon } from "@/components/ui/icon";
+import { Button, ButtonIcon } from "@/components/ui/button";
 import { View } from "@/components/ui/view";
 
 interface ChatMessageInputProps {
   message: string;
   setMessage: (message: string) => void;
-  onSend: () => void;
+  onAttachment: () => Promise<void>;
+  onSend: () => Promise<void>;
+  isAttaching: boolean;
+  isSending: boolean;
 }
 
-export function ChatMessageInput({ message, setMessage, onSend }: ChatMessageInputProps) {
+export function ChatMessageInput({
+  message,
+  setMessage,
+  onAttachment,
+  onSend,
+  isAttaching,
+  isSending,
+}: ChatMessageInputProps) {
   return (
     <View className="flex-row items-center bg-background-0 p-3">
-      <TextareaResizable className="flex-1">
+      <Button
+        variant="outline"
+        size="md"
+        onPress={onAttachment}
+        disabled={isAttaching}
+        className="mr-3 aspect-square border-outline-300 p-2 disabled:bg-background-300"
+      >
+        <ButtonIcon as={ImageIcon} size="md" className="text-typography-600" />
+      </Button>
+      <TextareaResizable size="md" className="flex-1">
         <TextareaResizableInput
           placeholder="Type a message..."
           value={message}
           onChangeText={setMessage}
-          className="min-h-10 px-3"
+          className="min-h-10 border-outline-300 px-3"
+          editable={!isSending}
         />
       </TextareaResizable>
       <Button
         variant="solid"
+        size="md"
         onPress={onSend}
-        disabled={!message.trim()}
-        className="ml-3 aspect-square rounded-full bg-success-500 p-2"
+        disabled={!message.trim() || isSending}
+        className="ml-3 aspect-square rounded-full bg-success-500 p-2 disabled:bg-background-300"
       >
-        <Icon as={SendIcon} size="sm" className="text-typography-0" />
+        <ButtonIcon as={SendIcon} size="md" className="text-typography-0" />
       </Button>
     </View>
   );
