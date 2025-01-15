@@ -137,7 +137,7 @@ export function ThreadList({ threads, getAvatarURL, onCreateThread }: ThreadList
               isPractitioner={isPractitioner}
             />
           )}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}

@@ -1,4 +1,5 @@
 import { useMedplumProfile } from "@medplum/react-hooks";
+import { Image } from "expo-image";
 import { FileDown, UserRound } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { View } from "react-native";
@@ -7,7 +8,6 @@ import { Alert } from "react-native";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button, ButtonIcon, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
-import { Image } from "@/components/ui/image";
 import { Text } from "@/components/ui/text";
 import type { ChatMessage } from "@/models/chat";
 import type { AttachmentWithUrl } from "@/types/attachment";
@@ -73,10 +73,11 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
             <View className="mb-1">
               {hasImage ? (
                 <Image
+                  style={{ width: 200, height: 200 }}
+                  contentFit="contain"
                   key={message.attachment.url}
                   source={message.attachment.url}
-                  size="2xl"
-                  resizeMode="contain"
+                  cachePolicy="memory-disk"
                   alt={`Attachment ${message.attachment.title}`}
                 />
               ) : (

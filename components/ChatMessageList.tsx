@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { ScrollView } from "react-native-gesture-handler";
+import { FlatList, ListRenderItem } from "react-native";
 
 import { useAvatars } from "@/hooks/useAvatars";
 import type { ChatMessage } from "@/models/chat";
@@ -13,26 +13,34 @@ interface ChatMessageListProps {
 }
 
 export function ChatMessageList({ messages, loading }: ChatMessageListProps) {
-  const scrollViewRef = useRef<ScrollView>(null);
+  const flatListRef = useRef<FlatList>(null);
   const { getAvatarURL } = useAvatars(messages.map((message) => message.avatarRef));
 
+  const renderItem: ListRenderItem<ChatMessage> = ({ item: message }) => (
+    <ChatMessageBubble
+      key={message.id}
+      message={message}
+      avatarURL={getAvatarURL(message.avatarRef)}
+    />
+  );
+
   return (
-    <ScrollView
-      ref={scrollViewRef}
+    <FlatList
+      ref={flatListRef}
+      data={messages}
+      renderItem={renderItem}
+      keyExtractor={(message) => message.id}
       className="flex-1 bg-background-50"
       onContentSizeChange={() => {
-        // Scroll to bottom when content size changes (e.g. new message)-]
-        scrollViewRef.current?.scrollToEnd({ animated: true });
+        // Scroll to bottom when content size changes (e.g. new message)
+        flatListRef.current?.scrollToEnd({ animated: true });
       }}
-    >
-      {messages.map((message) => (
-        <ChatMessageBubble
-          key={message.id}
-          message={message}
-          avatarURL={getAvatarURL(message.avatarRef)}
-        />
-      ))}
-      {loading && <LoadingDots />}
-    </ScrollView>
+      ListFooterComponent={loading ? <LoadingDots /> : null}
+      showsVerticalScrollIndicator={true}
+      initialNumToRender={15}
+      maxToRenderPerBatch={10}
+      windowSize={5}
+      removeClippedSubviews
+    />
   );
 }
