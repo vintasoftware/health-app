@@ -120,8 +120,7 @@ export default function ThreadPage() {
         setMessage={setMessage}
         onAttachment={handleAttachment}
         onSend={handleSendMessage}
-        isSending={isSending}
-        isAttaching={isAttaching}
+        isSending={isSending || isAttaching}
       />
     </SafeAreaView>
   );
