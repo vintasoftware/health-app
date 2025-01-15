@@ -3,7 +3,8 @@ import { Patient } from "@medplum/fhirtypes";
 import { useMedplumContext } from "@medplum/react-hooks";
 import { useRouter } from "expo-router";
 import { PlusIcon, UserRound } from "lucide-react-native";
-import { FlatList } from "react-native";
+import { useCallback } from "react";
+import { FlatList, ListRenderItem } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
@@ -112,6 +113,19 @@ export function ThreadList({ threads, getAvatarURL, onCreateThread }: ThreadList
   const { profile } = useMedplumContext();
   const isPractitioner = profile?.resourceType === "Practitioner";
 
+  const renderItem: ListRenderItem<Thread> = useCallback(
+    ({ item: thread, index }) => (
+      <ThreadItem
+        thread={thread}
+        index={index}
+        onPress={() => router.push(`/thread/${thread.id}`)}
+        avatarURL={getAvatarURL(thread.getAvatarRef({ profile })) ?? undefined}
+        isPractitioner={isPractitioner}
+      />
+    ),
+    [getAvatarURL, profile, isPractitioner, router],
+  );
+
   if (threads.length === 0) {
     return (
       <GestureHandlerRootView className="flex-1">
@@ -127,19 +141,10 @@ export function ThreadList({ threads, getAvatarURL, onCreateThread }: ThreadList
       <Box className="flex-1 bg-background-50">
         <FlatList
           data={threads}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => (
-            <ThreadItem
-              thread={item}
-              index={index}
-              onPress={() => router.push(`/thread/${item.id}`)}
-              avatarURL={getAvatarURL(item.getAvatarRef({ profile })) ?? undefined}
-              isPractitioner={isPractitioner}
-            />
-          )}
+          renderItem={renderItem}
+          keyExtractor={(thread) => thread.id}
           showsVerticalScrollIndicator={true}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
+          initialNumToRender={20}
           windowSize={5}
           removeClippedSubviews
         />

@@ -4,6 +4,19 @@ import * as Sharing from "expo-sharing";
 import type { AttachmentWithUrl } from "@/types/attachment";
 
 /**
+ * Removes AWS secret parameters from a media URL
+ * @param attachment - The attachment with the URL
+ * @returns The media URL without AWS secret parameters
+ */
+export function mediaKey(url: string): string {
+  const urlObj = new URL(url);
+  urlObj.searchParams.delete("AWSAccessKeyId");
+  urlObj.searchParams.delete("Signature");
+  urlObj.searchParams.delete("Expires");
+  return urlObj.toString();
+}
+
+/**
  * Downloads a file from a given attachment URL and saves it locally
  */
 export async function downloadFile(

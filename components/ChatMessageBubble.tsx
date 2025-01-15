@@ -1,8 +1,10 @@
 import { useMedplumProfile } from "@medplum/react-hooks";
 import { Image } from "expo-image";
-import { FileDown, UserRound } from "lucide-react-native";
-import { useCallback, useState } from "react";
-import { View } from "react-native";
+import { useVideoPlayer } from "expo-video";
+import { VideoView } from "expo-video";
+import { CirclePlay, FileDown, UserRound } from "lucide-react-native";
+import { useCallback, useRef, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import { Alert } from "react-native";
 
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
@@ -12,11 +14,63 @@ import { Text } from "@/components/ui/text";
 import type { ChatMessage } from "@/models/chat";
 import type { AttachmentWithUrl } from "@/types/attachment";
 import { formatTime } from "@/utils/datetime";
-import { shareFile } from "@/utils/media";
+import { mediaKey, shareFile } from "@/utils/media";
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
   avatarURL?: string | null;
+}
+
+const mediaStyles = StyleSheet.create({
+  media: {
+    width: 150,
+    height: 266,
+  },
+});
+
+function VideoAttachment({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, (player) => {
+    player.loop = true;
+    player.bufferOptions = {
+      minBufferForPlayback: 0,
+      preferredForwardBufferDuration: 5,
+      maxBufferBytes: 0,
+      prioritizeTimeOverSizeThreshold: false,
+      waitsToMinimizeStalling: true,
+    };
+  });
+  const videoRef = useRef<VideoView>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const handlePlayPress = useCallback(() => {
+    if (!player) return;
+    player.play();
+    videoRef.current?.enterFullscreen();
+    setIsFullscreen(true);
+  }, [player]);
+
+  const handleExitFullscreen = useCallback(() => {
+    setIsFullscreen(false);
+  }, []);
+
+  return (
+    <View className="relative">
+      <VideoView
+        ref={videoRef}
+        key={mediaKey(uri)}
+        style={mediaStyles.media}
+        player={player}
+        nativeControls={isFullscreen}
+        onFullscreenExit={handleExitFullscreen}
+      />
+      <Pressable
+        onPress={handlePlayPress}
+        className="absolute inset-0 items-center justify-center bg-black/50"
+      >
+        <Icon as={CirclePlay} size="xl" className="text-typography-0" />
+      </Pressable>
+    </View>
+  );
 }
 
 function FileAttachment({ attachment }: { attachment: AttachmentWithUrl }) {
@@ -55,6 +109,7 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
   const isPatientMessage = message.senderType === "Patient";
   const isCurrentUser = message.senderType === profile?.resourceType;
   const hasImage = message.attachment?.contentType?.startsWith("image/");
+  const hasVideo = message.attachment?.contentType?.startsWith("video/");
 
   const wrapperAlignment = isCurrentUser ? "self-end" : "self-start";
   const bubbleColor = isPatientMessage ? "bg-secondary-100" : "bg-tertiary-200";
@@ -70,16 +125,17 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
         </Avatar>
         <View className={`rounded-xl border p-3 ${bubbleColor} ${borderColor}`}>
           {message.attachment?.url && (
-            <View className="mb-1">
+            <View className="mt-2">
               {hasImage ? (
                 <Image
-                  style={{ width: 200, height: 200 }}
-                  contentFit="contain"
-                  key={message.attachment.url}
+                  style={mediaStyles.media}
+                  key={mediaKey(message.attachment.url)}
                   source={message.attachment.url}
-                  cachePolicy="memory-disk"
+                  contentFit="contain"
                   alt={`Attachment ${message.attachment.title}`}
                 />
+              ) : hasVideo ? (
+                <VideoAttachment uri={message.attachment.url} />
               ) : (
                 <FileAttachment attachment={message.attachment as AttachmentWithUrl} />
               )}

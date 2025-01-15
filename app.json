@@ -55,6 +55,13 @@
           "cameraPermission": "The app needs camera access when you want to attach media to your messages.",
           "microphonePermission": "The app needs microphone access when you want to attach media to your messages."
         }
+      ],
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": true,
+          "supportsPictureInPicture": true
+        }
       ]
     ],
     "experiments": {
