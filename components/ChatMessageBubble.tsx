@@ -128,7 +128,7 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
         </Avatar>
         <View className={`rounded-xl border p-3 ${bubbleColor} ${borderColor}`}>
           {message.attachment?.url && (
-            <View className="mt-2">
+            <View className="mb-1">
               {hasImage ? (
                 <Image
                   style={mediaStyles.media}
