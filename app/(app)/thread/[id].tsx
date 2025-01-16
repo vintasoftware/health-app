@@ -2,8 +2,7 @@ import { useMedplumContext } from "@medplum/react-hooks";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Alert } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Alert, View } from "react-native";
 
 import { ChatHeader } from "@/components/ChatHeader";
 import { ChatMessageInput } from "@/components/ChatMessageInput";
@@ -105,14 +104,14 @@ export default function ThreadPage() {
 
   if (!thread || isAvatarsLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center">
+      <View className="flex-1 items-center justify-center">
         <Spinner size="large" />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background-50">
+    <View className="flex-1 bg-background-50">
       <ChatHeader currentThread={thread} getAvatarURL={getAvatarURL} />
       <ChatMessageList messages={thread.messages} loading={isLoading} />
       <ChatMessageInput
@@ -122,6 +121,6 @@ export default function ThreadPage() {
         onSend={handleSendMessage}
         isSending={isSending || isAttaching}
       />
-    </SafeAreaView>
+    </View>
   );
 }

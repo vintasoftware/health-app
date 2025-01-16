@@ -10,8 +10,7 @@ import {
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useCallback, useState } from "react";
-import { Alert, Button } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Alert, Button, View } from "react-native";
 
 import { Spinner } from "@/components/ui/spinner";
 import { oauth2ClientId, oAuth2Discovery } from "@/utils/medplum-oauth2";
@@ -119,9 +118,9 @@ export default function SignIn() {
   }, [medplumLogin]);
 
   return (
-    <SafeAreaView className="flex-1 items-center justify-center">
+    <View className="flex-1 items-center justify-center">
       {isLoading && <Spinner size="large" />}
       {!isLoading && <Button title="Connect to Medplum" onPress={handleLogin} />}
-    </SafeAreaView>
+    </View>
   );
 }

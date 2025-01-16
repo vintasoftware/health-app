@@ -1,7 +1,7 @@
 import { useMedplumContext } from "@medplum/react-hooks";
 import { useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View } from "react-native";
 
 import { CreateThreadModal } from "@/components/CreateThreadModal";
 import { ThreadList } from "@/components/ThreadList";
@@ -28,14 +28,14 @@ export default function Index() {
 
   if (isLoading || isAvatarsLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center">
+      <View className="flex-1 items-center justify-center">
         <Spinner size="large" />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background-50">
+    <View className="flex-1 bg-background-50">
       <ThreadListHeader onLogout={handleLogout} onCreateThread={() => setIsCreateModalOpen(true)} />
       <ThreadList
         threads={threads}
@@ -47,6 +47,6 @@ export default function Index() {
         onClose={() => setIsCreateModalOpen(false)}
         onCreateThread={createThread}
       />
-    </SafeAreaView>
+    </View>
   );
 }
