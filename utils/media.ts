@@ -4,15 +4,27 @@ import * as Sharing from "expo-sharing";
 import type { AttachmentWithUrl } from "@/types/attachment";
 
 /**
+ * Check AWS media URL isn't expired
+ * @param url - The media URL
+ * @returns True if the media URL is expired, false otherwise
+ */
+export function isMediaExpired(url: string): boolean {
+  const urlObj = new URL(url);
+  const expires = urlObj.searchParams.get("Expires");
+  if (!expires) {
+    return false;
+  }
+  return new Date(parseInt(expires, 10) * 1000) < new Date();
+}
+
+/**
  * Removes AWS secret parameters from a media URL
  * @param attachment - The attachment with the URL
  * @returns The media URL without AWS secret parameters
  */
 export function mediaKey(url: string): string {
   const urlObj = new URL(url);
-  urlObj.searchParams.delete("AWSAccessKeyId");
-  urlObj.searchParams.delete("Signature");
-  urlObj.searchParams.delete("Expires");
+  urlObj.search = "";
   return urlObj.toString();
 }
 

@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import { useVideoPlayer } from "expo-video";
 import { VideoView } from "expo-video";
 import { CirclePlay, FileDown, UserRound } from "lucide-react-native";
-import { useCallback, useRef, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Alert } from "react-native";
 
@@ -14,7 +14,7 @@ import { Text } from "@/components/ui/text";
 import type { ChatMessage } from "@/models/chat";
 import type { AttachmentWithUrl } from "@/types/attachment";
 import { formatTime } from "@/utils/datetime";
-import { mediaKey, shareFile } from "@/utils/media";
+import { isMediaExpired, mediaKey, shareFile } from "@/utils/media";
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
@@ -28,50 +28,53 @@ const mediaStyles = StyleSheet.create({
   },
 });
 
-function VideoAttachment({ uri }: { uri: string }) {
-  const player = useVideoPlayer(uri, (player) => {
-    player.loop = true;
-    player.bufferOptions = {
-      minBufferForPlayback: 0,
-      preferredForwardBufferDuration: 5,
-      maxBufferBytes: 0,
-      prioritizeTimeOverSizeThreshold: false,
-      waitsToMinimizeStalling: true,
-    };
-  });
-  const videoRef = useRef<VideoView>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+const VideoAttachment = memo(
+  ({ uri }: { uri: string }) => {
+    const player = useVideoPlayer(uri, (player) => {
+      player.loop = true;
+      player.bufferOptions = {
+        // Reduce buffer for performance:
+        minBufferForPlayback: 0,
+        preferredForwardBufferDuration: 5,
+      };
+    });
+    const videoRef = useRef<VideoView>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const handlePlayPress = useCallback(() => {
-    if (!player) return;
-    player.play();
-    videoRef.current?.enterFullscreen();
-    setIsFullscreen(true);
-  }, [player]);
+    const handlePlayPress = useCallback(() => {
+      if (!player) return;
+      player.play();
+      videoRef.current?.enterFullscreen();
+      setIsFullscreen(true);
+    }, [player]);
 
-  const handleExitFullscreen = useCallback(() => {
-    setIsFullscreen(false);
-  }, []);
+    const handleExitFullscreen = useCallback(() => {
+      player?.pause();
+      setIsFullscreen(false);
+    }, [player]);
 
-  return (
-    <View className="relative">
-      <VideoView
-        ref={videoRef}
-        key={mediaKey(uri)}
-        style={mediaStyles.media}
-        player={player}
-        nativeControls={isFullscreen}
-        onFullscreenExit={handleExitFullscreen}
-      />
-      <Pressable
-        onPress={handlePlayPress}
-        className="absolute inset-0 items-center justify-center bg-black/50"
-      >
-        <Icon as={CirclePlay} size="xl" className="text-typography-0" />
-      </Pressable>
-    </View>
-  );
-}
+    return (
+      <View className="relative">
+        <VideoView
+          ref={videoRef}
+          style={mediaStyles.media}
+          player={player}
+          nativeControls={isFullscreen}
+          onFullscreenExit={handleExitFullscreen}
+        />
+        <Pressable
+          onPress={handlePlayPress}
+          className="absolute inset-0 items-center justify-center bg-black/50"
+        >
+          <Icon as={CirclePlay} size="xl" className="text-typography-0" />
+        </Pressable>
+      </View>
+    );
+  },
+  (oldProps: { uri: string }, newProps: { uri: string }) =>
+    mediaKey(oldProps.uri) === mediaKey(newProps.uri) && !isMediaExpired(oldProps.uri),
+);
+VideoAttachment.displayName = "VideoAttachment";
 
 function FileAttachment({ attachment }: { attachment: AttachmentWithUrl }) {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -129,7 +132,6 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
               {hasImage ? (
                 <Image
                   style={mediaStyles.media}
-                  key={mediaKey(message.attachment.url)}
                   source={message.attachment.url}
                   contentFit="contain"
                   alt={`Attachment ${message.attachment.title}`}
