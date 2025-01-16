@@ -1,26 +1,42 @@
-# [⚠️ UNDER CONSTRUCTION] Health Chat App 🩺
+# Medplum Chat App 🩺
 
-A sample healthcare mobile application built with Expo and React Native, using [Medplum](https://www.medplum.com/) as the backend EHR system. This app demonstrates how to build FHIR-native mobile applications for healthcare.
+A healthcare mobile chat application built with Expo and React Native, using [Medplum](https://www.medplum.com/) as the backend EHR system. This app demonstrates how to build FHIR-native mobile applications for healthcare.
 
 ## Features
 
 ### OAuth2 Authentication with Medplum
-
-The app uses OAuth2 to authenticate users with a Medplum instance.
+- Supports both Patient and Practitioner user roles with role-specific features
+- Works on both web and native platforms
+- Proper login/logout flow with state management
 
 ### Secure Real-Time Chat System
+The app implements a secure real-time chat system following Medplum's ["Organizing Communications Using Threads"](https://www.medplum.com/docs/communications/organizing-communications) architecture with the following features:
 
-The app implements a secure real-time chat system following Medplum's ["Organizing Communications Using Threads"](https://www.medplum.com/docs/communications/organizing-communications) architecture. This allows patients to:
+- **Chat**
+  - Message status: sent, received, read
+  - Real-time message updates using Medplum subscriptions
 
-- View all their chat threads with healthcare providers
-- Send and receive messages in real-time
-- Access chat history securely
+- **Media Support**
+  - Image, video, and file attachments
+  - Performance optimizations for media display
 
-The chat system is built using FHIR `Communication` and `Subscription` resources, ensuring healthcare compliance and data interoperability.
+- **Thread Management**
+  - View all chat threads
+  - Create new threads (for patients)
+  - Real-time thread updates
+
+- **UI/UX Features**
+  - Native look and feel
+  - Auto-scroll to bottom after new messages
+  - Loading states and indicators
+  - Safe area handling
+  - Avatar loading and display
 
 ### UI components
 
-UI components are built using [gluestack-ui v2](https://gluestack.io/). All original components from the library are kept as-is under the `components/ui` directory, but additional components are added to the same directory to support the app's requirements. Domain-specific components are at `components` directory.
+- Built using [gluestack-ui v2](https://gluestack.io/) components
+- Tailwind CSS for styling
+- Native-feeling animations and transitions
 
 ## Getting Started
 
@@ -110,6 +126,8 @@ npm run prepare
 - `/models` - Business logic models
 - `/utils` - Utility functions
 - `/__tests__` - Test files
+
+All original components from gluestack-ui v2 are kept as-is under the `components/ui` directory, but additional components are added to the same directory to support the app's requirements. Domain-specific components are at `components` directory.
 
 ## Updating gluestack-ui
 
