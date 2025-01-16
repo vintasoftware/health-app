@@ -6,7 +6,7 @@ import { memo, useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Alert } from "react-native";
 
-import { FullscreenImageModal } from "@/components/FullscreenImageModal";
+import { FullscreenImage } from "@/components/FullscreenImage";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button, ButtonIcon, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -130,7 +130,7 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
           {message.attachment?.url && (
             <View className="mb-1">
               {hasImage ? (
-                <FullscreenImageModal
+                <FullscreenImage
                   uri={message.attachment.url}
                   alt={`Attachment ${message.attachment.title}`}
                   thumbnailWidth={mediaStyles.media.width}

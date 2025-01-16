@@ -8,15 +8,15 @@ import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanima
 import { Icon } from "@/components/ui/icon";
 import { Modal, ModalBackdrop, ModalCloseButton, ModalContent } from "@/components/ui/modal";
 
-interface FullscreenImageModalProps {
+interface FullscreenImageProps {
   uri: string;
   alt?: string;
   thumbnailWidth: number;
   thumbnailHeight: number;
 }
 
-export const FullscreenImageModal = memo(
-  ({ uri, alt, thumbnailWidth, thumbnailHeight }: FullscreenImageModalProps) => {
+export const FullscreenImage = memo(
+  ({ uri, alt, thumbnailWidth, thumbnailHeight }: FullscreenImageProps) => {
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
     const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
     const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
@@ -136,4 +136,4 @@ export const FullscreenImageModal = memo(
   },
 );
 
-FullscreenImageModal.displayName = "FullscreenImageModal";
+FullscreenImage.displayName = "FullscreenImage";
