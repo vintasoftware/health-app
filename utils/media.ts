@@ -6,7 +6,7 @@ import type { AttachmentWithUrl } from "@/types/attachment";
 /**
  * Check AWS media URL isn't expired
  * @param url - The media URL
- * @returns True if the media URL is expired, false otherwise
+ * @returns true if the media URL is expired, false otherwise
  */
 export function isMediaExpired(url: string): boolean {
   const urlObj = new URL(url);
@@ -19,7 +19,7 @@ export function isMediaExpired(url: string): boolean {
 
 /**
  * Removes AWS secret parameters from a media URL
- * @param attachment - The attachment with the URL
+ * @param url - The media URL
  * @returns The media URL without AWS secret parameters
  */
 export function mediaKey(url: string): string {
