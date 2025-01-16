@@ -10,12 +10,11 @@ import { MedplumProvider } from "@medplum/react-hooks";
 import { makeRedirectUri } from "expo-auth-session";
 import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { GluestackUIProvider } from "@/components/gluestack-ui-provider";
+import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { oauth2ClientId } from "@/utils/medplum-oauth2";
 
 export const unstable_settings = {
@@ -48,23 +47,20 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <>
-      <StatusBar style="dark" translucent={true} />
+    <SafeAreaView className="h-full md:w-full">
       <GluestackUIProvider mode="light">
-        <SafeAreaProvider>
-          <MedplumProvider medplum={medplum}>
-            <GestureHandlerRootView className="flex-1">
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  // Prevents flickering:
-                  animation: "none",
-                }}
-              />
-            </GestureHandlerRootView>
-          </MedplumProvider>
-        </SafeAreaProvider>
+        <MedplumProvider medplum={medplum}>
+          <GestureHandlerRootView className="flex-1">
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                // Prevents flickering:
+                animation: "none",
+              }}
+            />
+          </GestureHandlerRootView>
+        </MedplumProvider>
       </GluestackUIProvider>
-    </>
+    </SafeAreaView>
   );
 }

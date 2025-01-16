@@ -1,6 +1,6 @@
 import { useMedplumContext } from "@medplum/react-hooks";
 import { Redirect, Slot } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View } from "react-native";
 
 import { PractitionerBanner } from "@/components/PractitionerBanner";
 import { Spinner } from "@/components/ui/spinner";
@@ -12,9 +12,9 @@ export default function AppLayout() {
 
   if (medplum.isLoading()) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background-50">
+      <View className="flex-1 items-center justify-center bg-background-50">
         <Spinner size="large" />
-      </SafeAreaView>
+      </View>
     );
   }
   if (!medplum.getActiveLogin()) {

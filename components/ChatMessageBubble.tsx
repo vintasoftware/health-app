@@ -1,8 +1,10 @@
 import { useMedplumProfile } from "@medplum/react-hooks";
 import { Image } from "expo-image";
-import { FileDown, UserRound } from "lucide-react-native";
-import { useCallback, useState } from "react";
-import { View } from "react-native";
+import { useVideoPlayer } from "expo-video";
+import { VideoView } from "expo-video";
+import { CirclePlay, FileDown, UserRound } from "lucide-react-native";
+import { memo, useCallback, useRef, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import { Alert } from "react-native";
 
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
@@ -12,12 +14,67 @@ import { Text } from "@/components/ui/text";
 import type { ChatMessage } from "@/models/chat";
 import type { AttachmentWithUrl } from "@/types/attachment";
 import { formatTime } from "@/utils/datetime";
-import { shareFile } from "@/utils/media";
+import { isMediaExpired, mediaKey, shareFile } from "@/utils/media";
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
   avatarURL?: string | null;
 }
+
+const mediaStyles = StyleSheet.create({
+  media: {
+    width: 150,
+    height: 266,
+  },
+});
+
+const VideoAttachment = memo(
+  ({ uri }: { uri: string }) => {
+    const player = useVideoPlayer(uri, (player) => {
+      player.loop = true;
+      player.bufferOptions = {
+        // Reduce buffer for performance:
+        minBufferForPlayback: 0,
+        preferredForwardBufferDuration: 5,
+      };
+    });
+    const videoRef = useRef<VideoView>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    const handlePlayPress = useCallback(() => {
+      if (!player) return;
+      player.play();
+      videoRef.current?.enterFullscreen();
+      setIsFullscreen(true);
+    }, [player]);
+
+    const handleExitFullscreen = useCallback(() => {
+      player?.pause();
+      setIsFullscreen(false);
+    }, [player]);
+
+    return (
+      <View className="relative">
+        <VideoView
+          ref={videoRef}
+          style={mediaStyles.media}
+          player={player}
+          nativeControls={isFullscreen}
+          onFullscreenExit={handleExitFullscreen}
+        />
+        <Pressable
+          onPress={handlePlayPress}
+          className="absolute inset-0 items-center justify-center bg-black/50"
+        >
+          <Icon as={CirclePlay} size="xl" className="text-typography-0" />
+        </Pressable>
+      </View>
+    );
+  },
+  (oldProps: { uri: string }, newProps: { uri: string }) =>
+    mediaKey(oldProps.uri) === mediaKey(newProps.uri) && !isMediaExpired(oldProps.uri),
+);
+VideoAttachment.displayName = "VideoAttachment";
 
 function FileAttachment({ attachment }: { attachment: AttachmentWithUrl }) {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -55,6 +112,7 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
   const isPatientMessage = message.senderType === "Patient";
   const isCurrentUser = message.senderType === profile?.resourceType;
   const hasImage = message.attachment?.contentType?.startsWith("image/");
+  const hasVideo = message.attachment?.contentType?.startsWith("video/");
 
   const wrapperAlignment = isCurrentUser ? "self-end" : "self-start";
   const bubbleColor = isPatientMessage ? "bg-secondary-100" : "bg-tertiary-200";
@@ -73,13 +131,13 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
             <View className="mb-1">
               {hasImage ? (
                 <Image
-                  style={{ width: 200, height: 200 }}
-                  contentFit="contain"
-                  key={message.attachment.url}
+                  style={mediaStyles.media}
                   source={message.attachment.url}
-                  cachePolicy="memory-disk"
+                  contentFit="contain"
                   alt={`Attachment ${message.attachment.title}`}
                 />
+              ) : hasVideo ? (
+                <VideoAttachment uri={message.attachment.url} />
               ) : (
                 <FileAttachment attachment={message.attachment as AttachmentWithUrl} />
               )}

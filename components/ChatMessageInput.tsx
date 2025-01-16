@@ -9,7 +9,6 @@ interface ChatMessageInputProps {
   setMessage: (message: string) => void;
   onAttachment: () => Promise<void>;
   onSend: () => Promise<void>;
-  isAttaching: boolean;
   isSending: boolean;
 }
 
@@ -18,7 +17,6 @@ export function ChatMessageInput({
   setMessage,
   onAttachment,
   onSend,
-  isAttaching,
   isSending,
 }: ChatMessageInputProps) {
   return (
@@ -27,14 +25,14 @@ export function ChatMessageInput({
         variant="outline"
         size="md"
         onPress={() => onAttachment()}
-        disabled={isAttaching}
+        disabled={isSending}
         className="mr-3 aspect-square border-outline-300 p-2 disabled:bg-background-300"
       >
         <ButtonIcon as={ImageIcon} size="md" className="text-typography-600" />
       </Button>
       <TextareaResizable size="md" className="flex-1">
         <TextareaResizableInput
-          placeholder="Type a message..."
+          placeholder={isSending ? "Sending..." : "Type a message..."}
           value={message}
           onChangeText={setMessage}
           className="min-h-10 border-outline-300 px-3"
