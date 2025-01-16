@@ -1,5 +1,4 @@
 import { useMedplumProfile } from "@medplum/react-hooks";
-import { Image } from "expo-image";
 import { useVideoPlayer } from "expo-video";
 import { VideoView } from "expo-video";
 import { CirclePlay, FileDown, UserRound } from "lucide-react-native";
@@ -7,6 +6,7 @@ import { memo, useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Alert } from "react-native";
 
+import { FullscreenImageModal } from "@/components/FullscreenImageModal";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button, ButtonIcon, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -130,11 +130,11 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
           {message.attachment?.url && (
             <View className="mb-1">
               {hasImage ? (
-                <Image
-                  style={mediaStyles.media}
-                  source={message.attachment.url}
-                  contentFit="contain"
+                <FullscreenImageModal
+                  uri={message.attachment.url}
                   alt={`Attachment ${message.attachment.title}`}
+                  thumbnailWidth={mediaStyles.media.width}
+                  thumbnailHeight={mediaStyles.media.height}
                 />
               ) : hasVideo ? (
                 <VideoAttachment uri={message.attachment.url} />

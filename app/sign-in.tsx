@@ -48,9 +48,7 @@ export default function SignIn() {
     const loginRequest = new AuthRequest({
       clientId: oauth2ClientId,
       usePKCE: true,
-      // Redirect URI must match Medplum config.
-      // Currently it's like exp://192.168.1.10:8081, but should be like myapp://
-      // See https://stackoverflow.com/a/78073461
+      // Redirect URI must match Medplum config, see README.md
       redirectUri: makeRedirectUri(),
       scopes: ["openid"],
     });
