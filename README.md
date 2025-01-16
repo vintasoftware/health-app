@@ -17,7 +17,7 @@ The app implements a secure real-time chat system following Medplum's ["Organizi
   - Real-time message updates using Medplum subscriptions
 
 - **Media Support**
-  - Image, video, and file attachments
+  - Image and video attachments
   - Performance optimizations for media display
 
 - **Thread Management**
