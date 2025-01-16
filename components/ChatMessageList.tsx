@@ -17,11 +17,7 @@ export function ChatMessageList({ messages, loading }: ChatMessageListProps) {
 
   const renderItem: ListRenderItem<ChatMessage> = useCallback(
     ({ item: message }) => (
-      <ChatMessageBubble
-        key={message.id}
-        message={message}
-        avatarURL={getAvatarURL(message.avatarRef)}
-      />
+      <ChatMessageBubble message={message} avatarURL={getAvatarURL(message.avatarRef)} />
     ),
     [getAvatarURL],
   );
