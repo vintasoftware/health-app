@@ -39,6 +39,10 @@ The app implements a secure live chat system following Medplum's ["Organizing Co
 - Tailwind CSS for styling
 - Native-feeling animations and transitions
 
+### Headless hooks
+
+All communication with Medplum is done through headless hooks and the `ChatContext` provider. If you want to build your own chat app, you can use the same hooks from this project. Check out the files in the `/hooks` directory and the `ChatContext` in the `/contexts` directory.
+
 ### About Medplum
 
 [Medplum](https://www.medplum.com/) is an open-source, API-first EHR. Medplum makes it easy to build healthcare apps quickly with less code. Medplum supports self-hosting, and provides a hosted service.
@@ -127,7 +131,7 @@ npm run prepare
 - `/components` - Reusable React components
 - `/components/ui` - gluestack-ui v2 components
 - `/contexts` - Global shared state and business logic, real-time chat logic is here
-- `/hooks` - React hooks for business logic, chat hooks are here
+- `/hooks` - React hooks for business logic, headless chat hooks are here
 - `/models` - Business logic models
 - `/utils` - Utility functions
 - `/__tests__` - Test files
