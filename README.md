@@ -1,20 +1,21 @@
 # Medplum Chat App 🩺
 
-A healthcare mobile chat application built with Expo and React Native, using [Medplum](https://www.medplum.com/) as the backend EHR system. This app demonstrates how to build FHIR-native mobile applications for healthcare.
+An example for a live chat mobile application built with Expo / React Native, using [Medplum](https://www.medplum.com/) as the backend EHR system. This project demonstrates how to build a FHIR-native app for real-time communications between patients and providers.
 
 ## Features
 
 ### OAuth2 Authentication with Medplum
+- Proper login/logout flow with secure state management
 - Supports both Patient and Practitioner user roles with role-specific features
 - Works on both web and native platforms
-- Proper login/logout flow with state management
 
-### Secure Real-Time Chat System
-The app implements a secure real-time chat system following Medplum's ["Organizing Communications Using Threads"](https://www.medplum.com/docs/communications/organizing-communications) architecture with the following features:
+### Secure Live Chat System
+The app implements a secure live chat system following Medplum's ["Organizing Communications Using Threads"](https://www.medplum.com/docs/communications/organizing-communications) architecture with the following features:
 
 - **Chat**
-  - Message status: sent, received, read
-  - Real-time message updates using Medplum subscriptions
+  - Send chat messages by creating new `Communication` resources
+  - Real-time message updates using Medplum WebSocket `Subscription` resource
+  - Auto-update of message status: sent, received, read
 
 - **Media Support**
   - Image and video attachments
@@ -37,6 +38,10 @@ The app implements a secure real-time chat system following Medplum's ["Organizi
 - Built using [gluestack-ui v2](https://gluestack.io/) components
 - Tailwind CSS for styling
 - Native-feeling animations and transitions
+
+### About Medplum
+
+[Medplum](https://www.medplum.com/) is an open-source, API-first EHR. Medplum makes it easy to build healthcare apps quickly with less code. Medplum supports self-hosting, and provides a hosted service.
 
 ## Getting Started
 
