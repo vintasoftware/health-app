@@ -31,6 +31,7 @@ const mediaStyles = StyleSheet.create({
 const VideoAttachment = memo(
   ({ uri }: { uri: string }) => {
     const player = useVideoPlayer(uri, (player) => {
+      player.pause();
       player.loop = true;
       player.bufferOptions = {
         // Reduce buffer for performance:
@@ -43,9 +44,11 @@ const VideoAttachment = memo(
 
     const handlePlayPress = useCallback(() => {
       if (!player) return;
-      player.play();
-      videoRef.current?.enterFullscreen();
       setIsFullscreen(true);
+      setTimeout(() => {
+        videoRef.current?.enterFullscreen();
+        player.play();
+      }, 100);
     }, [player]);
 
     const handleExitFullscreen = useCallback(() => {
