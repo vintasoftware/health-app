@@ -27,8 +27,12 @@ function ModalHeader({ onClose }: ModalHeaderProps) {
       <Text size="lg" bold>
         New Thread
       </Text>
-      <Pressable onPress={onClose} hitSlop={8}>
-        <Icon as={X} size="lg" className="text-typography-900" />
+      <Pressable
+        className="mr-2 rounded-full p-2 active:bg-secondary-100"
+        onPress={onClose}
+        hitSlop={8}
+      >
+        <Icon as={X} size="lg" className="text-typography-700" />
       </Pressable>
     </View>
   );
@@ -82,6 +86,11 @@ export function CreateThreadModal({ isOpen, onClose, onCreateThread }: CreateThr
   const [isCreating, setIsCreating] = useState(false);
   const router = useRouter();
 
+  const handleClose = useCallback(() => {
+    setTopic("");
+    onClose();
+  }, [onClose]);
+
   const handleCreate = useCallback(async () => {
     if (!topic.trim() || isCreating) return;
 
@@ -89,21 +98,20 @@ export function CreateThreadModal({ isOpen, onClose, onCreateThread }: CreateThr
     try {
       const threadId = await onCreateThread(topic);
       if (threadId) {
-        onClose();
+        handleClose();
         router.push(`/thread/${threadId}`);
       }
     } finally {
       setIsCreating(false);
-      setTopic("");
     }
-  }, [topic, isCreating, onCreateThread, onClose, router]);
+  }, [topic, isCreating, onCreateThread, handleClose, router]);
 
   if (!isOpen) return null;
 
   return (
-    <RNModal visible={isOpen} transparent animationType="fade" onRequestClose={onClose}>
+    <RNModal visible={isOpen} transparent animationType="fade" onRequestClose={handleClose}>
       <Animated.View entering={FadeIn} exiting={FadeOut} className="flex-1 bg-black/50">
-        <Pressable className="flex-1" onPress={onClose}>
+        <Pressable className="flex-1" onPress={handleClose}>
           <View
             className="flex-1 justify-center px-4"
             onStartShouldSetResponder={() => true}
@@ -113,10 +121,10 @@ export function CreateThreadModal({ isOpen, onClose, onCreateThread }: CreateThr
               entering={FadeIn.delay(100)}
               className="overflow-hidden rounded-lg bg-white dark:bg-gray-800"
             >
-              <ModalHeader onClose={onClose} />
+              <ModalHeader onClose={handleClose} />
               <ModalBody topic={topic} isCreating={isCreating} onTopicChange={setTopic} />
               <ModalFooter
-                onClose={onClose}
+                onClose={handleClose}
                 onCreate={handleCreate}
                 isCreating={isCreating}
                 isValid={Boolean(topic.trim())}
