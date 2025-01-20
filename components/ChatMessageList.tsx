@@ -33,7 +33,7 @@ export function ChatMessageList({ messages, loading }: ChatMessageListProps) {
       windowSize={5}
       removeClippedSubviews
       inverted
-      ListFooterComponent={loading ? <LoadingDots /> : null}
+      ListHeaderComponent={loading ? <LoadingDots /> : null}
     />
   );
 }

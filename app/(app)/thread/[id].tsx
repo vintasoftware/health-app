@@ -113,7 +113,7 @@ export default function ThreadPage() {
   return (
     <View className="flex-1 bg-background-50">
       <ChatHeader currentThread={thread} getAvatarURL={getAvatarURL} />
-      <ChatMessageList messages={thread.messages} loading={isLoading} />
+      <ChatMessageList messages={thread.messages} loading={isSending || isLoading} />
       <ChatMessageInput
         message={message}
         setMessage={setMessage}
