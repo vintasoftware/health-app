@@ -3,7 +3,9 @@
 An example for a live chat mobile application built with Expo / React Native, using [Medplum](https://www.medplum.com/) as the backend EHR system. This project demonstrates how to build a FHIR-native app for real-time communications between patients and providers.
 
 ## Demo video
-https://github.com/user-attachments/assets/bdf03046-c637-4169-a4c7-7f15a3728fd9
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/bad44323-368f-4fc2-b5d9-d53db74acc70" />
+</div>
 
 ## Features
 
