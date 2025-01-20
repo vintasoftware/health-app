@@ -4,7 +4,7 @@ An example for a live chat mobile application built with Expo / React Native, us
 
 ## Demo video
 <div align="center">
-  <video src="https://github.com/user-attachments/assets/811f7b47-1285-4a8a-b18b-7aef30f6c693" />
+  <video src="https://github.com/user-attachments/assets/50dc2a07-e350-4e6e-be2b-89b9e129ac4b" />
 </div>
 
 ## Features
