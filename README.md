@@ -18,9 +18,9 @@ An example for a live chat mobile application built with Expo / React Native, us
 The app implements a secure live chat system following Medplum's ["Organizing Communications Using Threads"](https://www.medplum.com/docs/communications/organizing-communications) architecture with the following features:
 
 - **Chat**
-  - Send chat messages by creating new `Communication` resources
-  - Real-time message updates using Medplum WebSocket `Subscription` resource
-  - Auto-update of message status: sent, received, read
+  - Send chat messages by creating new `Communication` FHIR resources
+  - Real-time message updates using Medplum WebSocket `Subscription`
+  - Auto-update of message status: sent, received, read, directly on `Communication` FHIR resource
 
 - **Media Support**
   - Image and video attachments
@@ -50,7 +50,7 @@ All communication with Medplum is done through headless hooks and the `ChatConte
 
 ### About Medplum
 
-[Medplum](https://www.medplum.com/) is an open-source, API-first EHR. Medplum makes it easy to build healthcare apps quickly with less code. Medplum supports self-hosting, and provides a hosted service.
+[Medplum](https://www.medplum.com/) is an open-source, API-first, FHIR-native EHR. Medplum makes it easy to build healthcare apps quickly with less code. Medplum supports self-hosting, and provides a hosted service. Medplum customers benefit from interoperability and compliance built into the platform, including FHIR, HIPAA, and others.
 
 ## Getting Started
 
