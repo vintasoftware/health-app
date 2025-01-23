@@ -130,6 +130,10 @@ The project uses ESLint, Prettier, and Husky for code quality and consistency. I
 npm run prepare
 ```
 
+### Known issues
+
+- Video playback is not supported on web due to cross-origin restrictions on browsers. To test video playback, run the app on an iOS or Android device. It's possible to solve this issue by hosting the video files on a server that supports CORS, instead of Medplum's storage.
+
 ## Project Structure
 
 - `/app` - Main application code using Expo Router for file-based routing
