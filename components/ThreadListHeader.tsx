@@ -1,6 +1,7 @@
 import { useMedplumContext } from "@medplum/react-hooks";
 import { EllipsisVerticalIcon, PlusIcon } from "lucide-react-native";
 import { useState } from "react";
+import { Platform } from "react-native";
 
 import { Button, ButtonIcon, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -36,6 +37,8 @@ export function ThreadListHeader({ onLogout, onCreateThread }: ThreadListHeaderP
 
           <Popover
             onClose={() => setIsMenuVisible(false)}
+            offset={Platform.OS !== "web" ? -10 : 0}
+            placement="bottom right"
             isOpen={isMenuVisible}
             trigger={(triggerProps) => (
               <Pressable
@@ -55,7 +58,7 @@ export function ThreadListHeader({ onLogout, onCreateThread }: ThreadListHeaderP
                     setIsMenuVisible(false);
                     onLogout?.();
                   }}
-                  className="flex-row items-center p-3 active:bg-secondary-100"
+                  className="flex-row items-center p-2 active:bg-secondary-100"
                 >
                   <Text className="text-typography-700">Logout</Text>
                 </Pressable>
