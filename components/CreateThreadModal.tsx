@@ -111,27 +111,25 @@ export function CreateThreadModal({ isOpen, onClose, onCreateThread }: CreateThr
   return (
     <RNModal visible={isOpen} transparent animationType="fade" onRequestClose={handleClose}>
       <Animated.View entering={FadeIn} exiting={FadeOut} className="flex-1 bg-black/50">
-        <Pressable className="flex-1" onPress={handleClose}>
-          <View
-            className="flex-1 justify-center px-4"
-            onStartShouldSetResponder={() => true}
-            onTouchEnd={(e) => e.stopPropagation()}
+        <View
+          className="flex-1 justify-center px-4"
+          onStartShouldSetResponder={() => true}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
+          <Animated.View
+            entering={FadeIn.delay(100)}
+            className="overflow-hidden rounded-lg bg-white"
           >
-            <Animated.View
-              entering={FadeIn.delay(100)}
-              className="overflow-hidden rounded-lg bg-white"
-            >
-              <ModalHeader onClose={handleClose} />
-              <ModalBody topic={topic} isCreating={isCreating} onTopicChange={setTopic} />
-              <ModalFooter
-                onClose={handleClose}
-                onCreate={handleCreate}
-                isCreating={isCreating}
-                isValid={Boolean(topic.trim())}
-              />
-            </Animated.View>
-          </View>
-        </Pressable>
+            <ModalHeader onClose={handleClose} />
+            <ModalBody topic={topic} isCreating={isCreating} onTopicChange={setTopic} />
+            <ModalFooter
+              onClose={handleClose}
+              onCreate={handleCreate}
+              isCreating={isCreating}
+              isValid={Boolean(topic.trim())}
+            />
+          </Animated.View>
+        </View>
       </Animated.View>
     </RNModal>
   );
