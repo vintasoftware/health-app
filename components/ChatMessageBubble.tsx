@@ -121,7 +121,6 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
   const bubbleColor = isPatientMessage ? "bg-secondary-100" : "bg-tertiary-200";
   const borderColor = isPatientMessage ? "border-secondary-200" : "border-tertiary-300";
   const flexDirection = isCurrentUser ? "flex-row-reverse" : "flex-row";
-
   return (
     <View className={`mx-2 max-w-[80%] p-2 ${wrapperAlignment}`}>
       <View className={`${flexDirection} items-end gap-2`}>
@@ -146,7 +145,7 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
               )}
             </View>
           )}
-          {message.text && <Text className="text-typography-900">{message.text}</Text>}
+          {Boolean(message.text) && <Text className="text-typography-900">{message.text}</Text>}
           <Text className="mt-1 text-xs text-typography-600">{formatTime(message.sentAt)}</Text>
         </View>
       </View>
