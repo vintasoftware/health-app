@@ -23,7 +23,7 @@ interface ModalHeaderProps {
 
 function ModalHeader({ onClose }: ModalHeaderProps) {
   return (
-    <View className="flex-row items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
+    <View className="flex-row items-center justify-between border-b border-gray-200 p-4">
       <Text size="lg" bold>
         New Thread
       </Text>
@@ -119,7 +119,7 @@ export function CreateThreadModal({ isOpen, onClose, onCreateThread }: CreateThr
           >
             <Animated.View
               entering={FadeIn.delay(100)}
-              className="overflow-hidden rounded-lg bg-white dark:bg-gray-800"
+              className="overflow-hidden rounded-lg bg-white"
             >
               <ModalHeader onClose={handleClose} />
               <ModalBody topic={topic} isCreating={isCreating} onTopicChange={setTopic} />
