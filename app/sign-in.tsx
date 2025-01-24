@@ -116,7 +116,7 @@ export default function SignIn() {
   }, [medplumLogin]);
 
   return (
-    <View className="flex-1 items-center justify-center">
+    <View className="flex-1 items-center justify-center bg-background-50">
       {isLoading && <Spinner size="large" />}
       {!isLoading && <Button title="Connect to Medplum" onPress={handleLogin} />}
     </View>

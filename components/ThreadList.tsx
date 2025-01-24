@@ -48,7 +48,7 @@ function ThreadItem({
       >
         <View className="flex-row items-center gap-3 p-4">
           <Avatar size="md" className="border-2 border-primary-200">
-            <Icon as={UserRound} size="lg" className="stroke-white" />
+            <Icon as={UserRound} size="lg" className="stroke-typography-0" />
             <AvatarImage source={{ uri: avatarURL }} />
           </Avatar>
 

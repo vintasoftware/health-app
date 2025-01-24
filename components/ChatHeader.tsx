@@ -86,7 +86,7 @@ export function ChatHeader({
         </Pressable>
         <View className="flex-1 flex-row items-center gap-3">
           <Avatar size="md" className="border-2 border-primary-200">
-            <Icon as={UserRound} size="lg" className="stroke-white" />
+            <Icon as={UserRound} size="lg" className="stroke-typography-0" />
             {avatarURL && <AvatarImage source={{ uri: avatarURL }} />}
           </Avatar>
           <View className="flex-col">

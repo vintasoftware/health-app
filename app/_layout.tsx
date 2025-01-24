@@ -48,8 +48,8 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <SafeAreaView className="h-full md:w-full">
-      <GluestackUIProvider mode="light">
+    <SafeAreaView className="h-full bg-background-50 md:w-full">
+      <GluestackUIProvider mode="system">
         <MedplumProvider medplum={medplum}>
           <GestureHandlerRootView className="flex-1">
             <Stack

@@ -104,7 +104,7 @@ export default function ThreadPage() {
 
   if (!thread || isAvatarsLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
+      <View className="flex-1 items-center justify-center bg-background-50">
         <Spinner size="large" />
       </View>
     );
