@@ -6,7 +6,6 @@ import { PlusIcon, UserRound } from "lucide-react-native";
 import { useCallback } from "react";
 import { FlatList, ListRenderItem } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Box } from "@/components/ui/box";
@@ -42,7 +41,7 @@ function ThreadItem({
   const { profile } = useMedplumContext();
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
+    <View>
       <Pressable
         onPress={() => onPress()}
         className="overflow-hidden bg-background-0 active:bg-secondary-100"
@@ -77,7 +76,7 @@ function ThreadItem({
         </View>
       </Pressable>
       <View className="h-[1px] bg-outline-100" />
-    </Animated.View>
+    </View>
   );
 }
 

@@ -1,4 +1,5 @@
 import "@/global.css";
+import "expo-dev-client";
 
 import { MedplumClient } from "@medplum/core";
 import {
@@ -23,7 +24,7 @@ export const unstable_settings = {
 
 SplashScreen.preventAutoHideAsync();
 
-polyfillMedplumWebAPIs();
+polyfillMedplumWebAPIs({ location: false });
 const medplum = new MedplumClient({
   clientId: oauth2ClientId,
   storage: new ExpoClientStorage(),
