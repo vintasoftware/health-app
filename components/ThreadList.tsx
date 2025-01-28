@@ -27,13 +27,11 @@ interface ThreadListProps {
 
 function ThreadItem({
   thread,
-  index,
   onPress,
   avatarURL,
   isPractitioner,
 }: {
   thread: Thread;
-  index: number;
   onPress: () => void;
   avatarURL: string | undefined;
   isPractitioner: boolean;
@@ -113,10 +111,9 @@ export function ThreadList({ threads, getAvatarURL, onCreateThread }: ThreadList
   const isPractitioner = profile?.resourceType === "Practitioner";
 
   const renderItem: ListRenderItem<Thread> = useCallback(
-    ({ item: thread, index }) => (
+    ({ item: thread }) => (
       <ThreadItem
         thread={thread}
-        index={index}
         onPress={() => router.push(`/thread/${thread.id}`)}
         avatarURL={getAvatarURL(thread.getAvatarRef({ profile })) ?? undefined}
         isPractitioner={isPractitioner}
