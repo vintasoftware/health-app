@@ -4,9 +4,9 @@ import { useCallback, useMemo, useState } from "react";
 import { View } from "react-native";
 
 import { CreateThreadModal } from "@/components/CreateThreadModal";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import { ThreadList } from "@/components/ThreadList";
 import { ThreadListHeader } from "@/components/ThreadListHeader";
-import { Spinner } from "@/components/ui/spinner";
 import { useAvatars } from "@/hooks/useAvatars";
 import { useThreads } from "@/hooks/useThreads";
 
@@ -27,11 +27,7 @@ export default function Index() {
   }, [medplum, router]);
 
   if (isLoading || isAvatarsLoading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background-50">
-        <Spinner size="large" />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (

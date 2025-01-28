@@ -1,9 +1,8 @@
 import { useMedplumContext } from "@medplum/react-hooks";
 import { Redirect, Slot } from "expo-router";
-import { View } from "react-native";
 
+import { LoadingScreen } from "@/components/LoadingScreen";
 import { PractitionerBanner } from "@/components/PractitionerBanner";
-import { Spinner } from "@/components/ui/spinner";
 import { ChatProvider } from "@/contexts/ChatContext";
 
 export default function AppLayout() {
@@ -11,11 +10,7 @@ export default function AppLayout() {
   const isPractitioner = profile?.resourceType === "Practitioner";
 
   if (medplum.isLoading()) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background-50">
-        <Spinner size="large" />
-      </View>
-    );
+    return <LoadingScreen />;
   }
   if (!medplum.getActiveLogin()) {
     return <Redirect href="/sign-in" />;

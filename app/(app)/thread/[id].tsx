@@ -7,7 +7,7 @@ import { Alert, View } from "react-native";
 import { ChatHeader } from "@/components/ChatHeader";
 import { ChatMessageInput } from "@/components/ChatMessageInput";
 import { ChatMessageList } from "@/components/ChatMessageList";
-import { Spinner } from "@/components/ui/spinner";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import { useAvatars } from "@/hooks/useAvatars";
 import { useSingleThread } from "@/hooks/useSingleThread";
 
@@ -103,11 +103,7 @@ export default function ThreadPage() {
   }, [thread, handleSendMessage]);
 
   if (!thread || isAvatarsLoading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background-50">
-        <Spinner size="large" />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
