@@ -30,7 +30,7 @@ export const unstable_settings = {
 
 SplashScreen.preventAutoHideAsync();
 
-polyfillMedplumWebAPIs({ location: false });
+polyfillMedplumWebAPIs();
 const medplum = new MedplumClient({
   clientId: oauth2ClientId,
   storage: new ExpoClientStorage(),
