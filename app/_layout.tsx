@@ -55,13 +55,10 @@ export default function RootLayout() {
 
   const { colorScheme } = useColorScheme();
   return (
-    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <SafeAreaView className="h-full bg-background-50 md:w-full">
-        <StatusBar
-          style={colorScheme === "dark" ? "light" : "dark"}
-          backgroundColor={colorScheme === "dark" ? "black" : "white"}
-        />
-        <GluestackUIProvider mode={colorScheme}>
+    <GluestackUIProvider mode={colorScheme}>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <StatusBar />
+        <SafeAreaView className="h-full bg-background-0 md:w-full">
           <MedplumProvider medplum={medplum}>
             <GestureHandlerRootView className="flex-1">
               <Stack
@@ -73,8 +70,8 @@ export default function RootLayout() {
               />
             </GestureHandlerRootView>
           </MedplumProvider>
-        </GluestackUIProvider>
-      </SafeAreaView>
-    </SafeAreaProvider>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    </GluestackUIProvider>
   );
 }
