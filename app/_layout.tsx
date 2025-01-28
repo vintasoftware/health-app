@@ -57,8 +57,10 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <SafeAreaView className="h-full bg-background-50 md:w-full">
-        <StatusBar style={colorScheme === "dark" ? "dark" : "light"} />
-
+        <StatusBar
+          style={colorScheme === "dark" ? "light" : "dark"}
+          backgroundColor={colorScheme === "dark" ? "black" : "white"}
+        />
         <GluestackUIProvider mode={colorScheme}>
           <MedplumProvider medplum={medplum}>
             <GestureHandlerRootView className="flex-1">

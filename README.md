@@ -33,6 +33,7 @@ The app implements a secure live chat system following Medplum's ["Organizing Co
 
 - **UI/UX Features**
   - Native look and feel
+  - Dark mode / theme support
   - Auto-scroll to bottom after new messages
   - Loading states and indicators
   - Safe area handling
