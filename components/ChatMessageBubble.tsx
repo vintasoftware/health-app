@@ -2,6 +2,7 @@ import { useMedplumProfile } from "@medplum/react-hooks";
 import { useVideoPlayer } from "expo-video";
 import { VideoView } from "expo-video";
 import { CirclePlay, FileDown, UserRound } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 import { memo, useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Alert } from "react-native";
@@ -15,7 +16,6 @@ import type { ChatMessage } from "@/models/chat";
 import type { AttachmentWithUrl } from "@/types/attachment";
 import { formatTime } from "@/utils/datetime";
 import { isMediaExpired, mediaKey, shareFile } from "@/utils/media";
-import { getThemeColor } from "@/utils/theme";
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
@@ -82,6 +82,7 @@ VideoAttachment.displayName = "VideoAttachment";
 
 function FileAttachment({ attachment }: { attachment: AttachmentWithUrl }) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const { colorScheme } = useColorScheme();
 
   const handleShare = useCallback(async () => {
     setIsDownloading(true);
@@ -102,7 +103,7 @@ function FileAttachment({ attachment }: { attachment: AttachmentWithUrl }) {
       disabled={isDownloading}
     >
       {isDownloading ? (
-        <ButtonSpinner color={getThemeColor("--color-typography-900")} />
+        <ButtonSpinner color={colorScheme === "dark" ? "black" : "white"} />
       ) : (
         <ButtonIcon as={FileDown} className="text-typography-0 text-typography-600" />
       )}

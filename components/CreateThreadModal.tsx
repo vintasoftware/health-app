@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 import { X } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 import { useCallback, useState } from "react";
 import { Modal as RNModal, Pressable } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
@@ -9,7 +10,6 @@ import { Icon } from "@/components/ui/icon";
 import { Input, InputField } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
-import { getThemeColor } from "@/utils/theme";
 
 interface CreateThreadModalProps {
   isOpen: boolean;
@@ -69,6 +69,8 @@ interface ModalFooterProps {
 }
 
 function ModalFooter({ onClose, onCreate, isCreating, isValid }: ModalFooterProps) {
+  const { colorScheme } = useColorScheme();
+
   return (
     <View className="flex-row justify-end gap-2 p-4">
       <Button variant="outline" onPress={onClose} className="mr-2">
@@ -76,7 +78,7 @@ function ModalFooter({ onClose, onCreate, isCreating, isValid }: ModalFooterProp
       </Button>
       <Button className="min-w-[100px]" disabled={!isValid || isCreating} onPress={onCreate}>
         {isCreating ? (
-          <ButtonSpinner color={getThemeColor("--color-typography-900")} />
+          <ButtonSpinner color={colorScheme === "dark" ? "black" : "white"} />
         ) : (
           <ButtonText>Create</ButtonText>
         )}
