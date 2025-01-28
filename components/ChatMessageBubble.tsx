@@ -105,9 +105,9 @@ function FileAttachment({ attachment }: { attachment: AttachmentWithUrl }) {
       {isDownloading ? (
         <ButtonSpinner color={colorScheme === "dark" ? "black" : "white"} />
       ) : (
-        <ButtonIcon as={FileDown} className="text-typography-0 text-typography-600" />
+        <ButtonIcon as={FileDown} className="text-typography-100" />
       )}
-      <ButtonText className="text-sm text-typography-0">
+      <ButtonText className="text-sm text-typography-100">
         {attachment.title || "Attachment"}
       </ButtonText>
     </Button>
