@@ -2,6 +2,7 @@ import { useMedplumProfile } from "@medplum/react-hooks";
 import { useVideoPlayer } from "expo-video";
 import { VideoView } from "expo-video";
 import { CirclePlay, FileDown, UserRound } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 import { memo, useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Alert } from "react-native";
@@ -67,7 +68,7 @@ const VideoAttachment = memo(
         />
         <Pressable
           onPress={handlePlayPress}
-          className="absolute inset-0 items-center justify-center bg-black/50"
+          className="absolute inset-0 items-center justify-center bg-background-dark/50 dark:bg-background-dark/90"
         >
           <Icon as={CirclePlay} size="xl" className="text-typography-0" />
         </Pressable>
@@ -81,6 +82,7 @@ VideoAttachment.displayName = "VideoAttachment";
 
 function FileAttachment({ attachment }: { attachment: AttachmentWithUrl }) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const { colorScheme } = useColorScheme();
 
   const handleShare = useCallback(async () => {
     setIsDownloading(true);
@@ -101,11 +103,13 @@ function FileAttachment({ attachment }: { attachment: AttachmentWithUrl }) {
       disabled={isDownloading}
     >
       {isDownloading ? (
-        <ButtonSpinner className="text-white" />
+        <ButtonSpinner color={colorScheme === "dark" ? "black" : "white"} />
       ) : (
-        <ButtonIcon as={FileDown} className="text-typography-600 text-white" />
+        <ButtonIcon as={FileDown} className="text-typography-100" />
       )}
-      <ButtonText className="text-sm text-white">{attachment.title || "Attachment"}</ButtonText>
+      <ButtonText className="text-sm text-typography-100">
+        {attachment.title || "Attachment"}
+      </ButtonText>
     </Button>
   );
 }
@@ -118,14 +122,14 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
   const hasVideo = message.attachment?.contentType?.startsWith("video/");
 
   const wrapperAlignment = isCurrentUser ? "self-end" : "self-start";
-  const bubbleColor = isPatientMessage ? "bg-secondary-100" : "bg-tertiary-200";
-  const borderColor = isPatientMessage ? "border-secondary-200" : "border-tertiary-300";
+  const bubbleColor = isPatientMessage ? "bg-secondary-200" : "bg-tertiary-200";
+  const borderColor = isPatientMessage ? "border-secondary-300" : "border-tertiary-300";
   const flexDirection = isCurrentUser ? "flex-row-reverse" : "flex-row";
   return (
     <View className={`mx-2 max-w-[80%] p-2 ${wrapperAlignment}`}>
       <View className={`${flexDirection} items-end gap-2`}>
         <Avatar size="sm" className="border border-primary-200">
-          <Icon as={UserRound} size="sm" className="stroke-white" />
+          <Icon as={UserRound} size="sm" className="stroke-typography-0" />
           {avatarURL && <AvatarImage source={{ uri: avatarURL }} />}
         </Avatar>
         <View className={`rounded-xl border p-3 ${bubbleColor} ${borderColor}`}>

@@ -1,13 +1,13 @@
 import { useRouter } from "expo-router";
 import { X } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 import { useCallback, useState } from "react";
 import { Modal as RNModal, Pressable } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 
-import { Button, ButtonText } from "@/components/ui/button";
+import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input, InputField } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 
@@ -23,12 +23,12 @@ interface ModalHeaderProps {
 
 function ModalHeader({ onClose }: ModalHeaderProps) {
   return (
-    <View className="flex-row items-center justify-between border-b border-gray-200 p-4">
+    <View className="flex-row items-center justify-between border-b border-outline-100 p-4">
       <Text size="lg" bold>
         New Thread
       </Text>
       <Pressable
-        className="mr-2 rounded-full p-2 active:bg-secondary-100"
+        className="mr-2 rounded-full p-2 active:bg-background-100"
         onPress={onClose}
         hitSlop={8}
       >
@@ -69,13 +69,19 @@ interface ModalFooterProps {
 }
 
 function ModalFooter({ onClose, onCreate, isCreating, isValid }: ModalFooterProps) {
+  const { colorScheme } = useColorScheme();
+
   return (
     <View className="flex-row justify-end gap-2 p-4">
       <Button variant="outline" onPress={onClose} className="mr-2">
         <ButtonText>Cancel</ButtonText>
       </Button>
       <Button className="min-w-[100px]" disabled={!isValid || isCreating} onPress={onCreate}>
-        {isCreating ? <Spinner size="small" color="white" /> : <ButtonText>Create</ButtonText>}
+        {isCreating ? (
+          <ButtonSpinner color={colorScheme === "dark" ? "black" : "white"} />
+        ) : (
+          <ButtonText>Create</ButtonText>
+        )}
       </Button>
     </View>
   );
@@ -110,7 +116,11 @@ export function CreateThreadModal({ isOpen, onClose, onCreateThread }: CreateThr
 
   return (
     <RNModal visible={isOpen} transparent animationType="fade" onRequestClose={handleClose}>
-      <Animated.View entering={FadeIn} exiting={FadeOut} className="flex-1 bg-black/50">
+      <Animated.View
+        entering={FadeIn}
+        exiting={FadeOut}
+        className="flex-1 bg-background-dark/50 dark:bg-background-dark/90"
+      >
         <View
           className="flex-1 justify-center px-4"
           onStartShouldSetResponder={() => true}
@@ -118,7 +128,7 @@ export function CreateThreadModal({ isOpen, onClose, onCreateThread }: CreateThr
         >
           <Animated.View
             entering={FadeIn.delay(100)}
-            className="overflow-hidden rounded-lg bg-white"
+            className="overflow-hidden rounded-lg bg-background-0 dark:border dark:border-outline-100"
           >
             <ModalHeader onClose={handleClose} />
             <ModalBody topic={topic} isCreating={isCreating} onTopicChange={setTopic} />
