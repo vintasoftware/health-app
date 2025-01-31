@@ -2,11 +2,12 @@ import { Patient, Practitioner } from "@medplum/fhirtypes";
 import { Reference } from "@medplum/fhirtypes";
 import { useMedplumContext } from "@medplum/react-hooks";
 import { useRouter } from "expo-router";
-import { ChevronLeftIcon, UserRound } from "lucide-react-native";
+import { ChevronLeftIcon, TrashIcon, UserRound, XIcon } from "lucide-react-native";
 import { useMemo } from "react";
 import { View } from "react-native";
 
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { Button, ButtonIcon, ButtonSpinner, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
@@ -46,6 +47,7 @@ function ChatStatus({ currentThread }: { currentThread: Thread }) {
       message: "A provider will respond to you soon",
     };
   }, [currentThread, isPatient]);
+
   return (
     <View className="flex-row items-center gap-1.5">
       <View className={`h-2 w-2 rounded-full ${color}`} />
@@ -56,18 +58,30 @@ function ChatStatus({ currentThread }: { currentThread: Thread }) {
   );
 }
 
-export function ChatHeader({
-  currentThread,
-  getAvatarURL,
-}: {
+export interface ChatHeaderProps {
   currentThread: Thread;
   getAvatarURL: (
     reference: Reference<Patient | Practitioner> | undefined,
   ) => string | null | undefined;
-}) {
+  selectedCount?: number;
+  onDelete?: () => void;
+  onCancelSelection?: () => void;
+  isDeleting?: boolean;
+}
+
+export function ChatHeader({
+  currentThread,
+  getAvatarURL,
+  selectedCount = 0,
+  onDelete,
+  onCancelSelection,
+  isDeleting = false,
+}: ChatHeaderProps) {
   const router = useRouter();
   const { profile } = useMedplumContext();
   const avatarURL = getAvatarURL(currentThread.getAvatarRef({ profile }));
+
+  const isSelectionMode = selectedCount > 0;
 
   return (
     <View className="border-b border-outline-100 bg-background-0">
@@ -75,27 +89,58 @@ export function ChatHeader({
         <Pressable
           className="mr-2 rounded-full p-2 active:bg-secondary-100"
           onPress={() => {
-            if (router.canGoBack()) {
+            if (isSelectionMode) {
+              onCancelSelection?.();
+            } else if (router.canGoBack()) {
               router.back();
             } else {
               router.replace("/");
             }
           }}
         >
-          <Icon as={ChevronLeftIcon} size="md" className="text-typography-700" />
+          <Icon
+            as={isSelectionMode ? XIcon : ChevronLeftIcon}
+            size="md"
+            className="text-typography-700"
+          />
         </Pressable>
-        <View className="flex-1 flex-row items-center gap-3">
-          <Avatar size="md" className="border-2 border-primary-200">
-            <Icon as={UserRound} size="lg" className="stroke-typography-0" />
-            {avatarURL && <AvatarImage source={{ uri: avatarURL }} />}
-          </Avatar>
-          <View className="flex-col">
+        {isSelectionMode ? (
+          <View className="flex-1 flex-row items-center justify-between">
             <Text size="md" bold className="text-typography-900">
-              {currentThread.topic}
+              {selectedCount} selected
             </Text>
-            <ChatStatus currentThread={currentThread} />
+            <Button
+              variant="solid"
+              action="negative"
+              size="sm"
+              onPress={onDelete}
+              disabled={isDeleting}
+              className="mr-2"
+            >
+              {isDeleting ? (
+                <ButtonSpinner />
+              ) : (
+                <>
+                  <ButtonIcon as={TrashIcon} size="sm" />
+                  <ButtonText>Delete</ButtonText>
+                </>
+              )}
+            </Button>
           </View>
-        </View>
+        ) : (
+          <View className="flex-1 flex-row items-center gap-3">
+            <Avatar size="md" className="border-2 border-primary-200">
+              <Icon as={UserRound} size="lg" className="stroke-typography-0" />
+              {avatarURL && <AvatarImage source={{ uri: avatarURL }} />}
+            </Avatar>
+            <View className="flex-col">
+              <Text size="md" bold className="text-typography-900">
+                {currentThread.topic}
+              </Text>
+              <ChatStatus currentThread={currentThread} />
+            </View>
+          </View>
+        )}
       </View>
     </View>
   );

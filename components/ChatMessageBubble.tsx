@@ -20,6 +20,9 @@ import { isMediaExpired, mediaKey, shareFile } from "@/utils/media";
 interface ChatMessageBubbleProps {
   message: ChatMessage;
   avatarURL?: string | null;
+  selected?: boolean;
+  onSelect?: (messageId: string) => void;
+  selectionEnabled?: boolean;
 }
 
 const mediaStyles = StyleSheet.create({
@@ -114,7 +117,13 @@ function FileAttachment({ attachment }: { attachment: AttachmentWithUrl }) {
   );
 }
 
-export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps) {
+export function ChatMessageBubble({
+  message,
+  avatarURL,
+  selected = false,
+  onSelect,
+  selectionEnabled = false,
+}: ChatMessageBubbleProps) {
   const profile = useMedplumProfile();
   const isPatientMessage = message.senderType === "Patient";
   const isCurrentUser = message.senderType === profile?.resourceType;
@@ -125,34 +134,66 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
   const bubbleColor = isPatientMessage ? "bg-secondary-200" : "bg-tertiary-200";
   const borderColor = isPatientMessage ? "border-secondary-300" : "border-tertiary-300";
   const flexDirection = isCurrentUser ? "flex-row-reverse" : "flex-row";
+
+  const handleLongPress = useCallback(() => {
+    if (onSelect) {
+      onSelect(message.id);
+    }
+  }, [message.id, onSelect]);
+
+  const handlePress = useCallback(() => {
+    if (selectionEnabled && onSelect) {
+      onSelect(message.id);
+    }
+  }, [message.id, onSelect, selectionEnabled]);
+
   return (
-    <View className={`mx-2 max-w-[80%] p-2 ${wrapperAlignment}`}>
-      <View className={`${flexDirection} items-end gap-2`}>
-        <Avatar size="sm" className="border border-primary-200">
-          <Icon as={UserRound} size="sm" className="stroke-typography-0" />
-          {avatarURL && <AvatarImage source={{ uri: avatarURL }} />}
-        </Avatar>
-        <View className={`rounded-xl border p-3 ${bubbleColor} ${borderColor}`}>
-          {message.attachment?.url && (
-            <View className="mb-1">
-              {hasImage ? (
-                <FullscreenImage
-                  uri={message.attachment.url}
-                  alt={`Attachment ${message.attachment.title}`}
-                  thumbnailWidth={mediaStyles.media.width}
-                  thumbnailHeight={mediaStyles.media.height}
-                />
-              ) : hasVideo ? (
-                <VideoAttachment uri={message.attachment.url} />
-              ) : (
-                <FileAttachment attachment={message.attachment as AttachmentWithUrl} />
+    <View className={`relative ${wrapperAlignment} w-full`}>
+      {/* Selection background */}
+      {selected && <View className="absolute inset-0 bg-background-100" />}
+
+      <Pressable
+        className="flex-1 p-2"
+        onLongPress={handleLongPress}
+        onPress={handlePress}
+        delayLongPress={200}
+      >
+        <View className={`max-w-[80%] ${wrapperAlignment}`}>
+          <View className={`${flexDirection} items-end gap-2`}>
+            <Avatar
+              size="sm"
+              className={`border ${selected ? "border-primary-500" : "border-primary-200"}`}
+            >
+              <Icon as={UserRound} size="sm" className="stroke-typography-0" />
+              {avatarURL && <AvatarImage source={{ uri: avatarURL }} />}
+            </Avatar>
+            <View
+              className={`rounded-xl border p-3 ${bubbleColor} ${borderColor} ${
+                selected ? "border-primary-500" : ""
+              }`}
+            >
+              {message.attachment?.url && (
+                <View className="mb-1">
+                  {hasImage ? (
+                    <FullscreenImage
+                      uri={message.attachment.url}
+                      alt={`Attachment ${message.attachment.title}`}
+                      thumbnailWidth={mediaStyles.media.width}
+                      thumbnailHeight={mediaStyles.media.height}
+                    />
+                  ) : hasVideo ? (
+                    <VideoAttachment uri={message.attachment.url} />
+                  ) : (
+                    <FileAttachment attachment={message.attachment as AttachmentWithUrl} />
+                  )}
+                </View>
               )}
+              {Boolean(message.text) && <Text className="text-typography-900">{message.text}</Text>}
+              <Text className="mt-1 text-xs text-typography-600">{formatTime(message.sentAt)}</Text>
             </View>
-          )}
-          {Boolean(message.text) && <Text className="text-typography-900">{message.text}</Text>}
-          <Text className="mt-1 text-xs text-typography-600">{formatTime(message.sentAt)}</Text>
+          </View>
         </View>
-      </View>
+      </Pressable>
     </View>
   );
 }
