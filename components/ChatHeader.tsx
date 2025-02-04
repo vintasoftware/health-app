@@ -6,8 +6,9 @@ import { ChevronLeftIcon, TrashIcon, UserRound, XIcon } from "lucide-react-nativ
 import { useMemo } from "react";
 import { View } from "react-native";
 
+import { LoadingButtonSpinner } from "@/components/LoadingButtonSpinner";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Button, ButtonIcon, ButtonSpinner, ButtonText } from "@/components/ui/button";
+import { Button, ButtonIcon, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
@@ -118,7 +119,7 @@ export function ChatHeader({
               className="mr-2"
             >
               {isDeleting ? (
-                <ButtonSpinner />
+                <LoadingButtonSpinner />
               ) : (
                 <>
                   <ButtonIcon as={TrashIcon} size="sm" />

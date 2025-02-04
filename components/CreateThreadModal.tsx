@@ -1,9 +1,9 @@
 import { useRouter } from "expo-router";
-import { useColorScheme } from "nativewind";
 import { useState } from "react";
 
+import { LoadingButtonSpinner } from "@/components/LoadingButtonSpinner";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/Modal";
-import { Button, ButtonSpinner, ButtonText } from "@/components/ui/button";
+import { Button, ButtonText } from "@/components/ui/button";
 import { Input, InputField } from "@/components/ui/input";
 import { View } from "@/components/ui/view";
 
@@ -16,7 +16,6 @@ interface CreateThreadModalProps {
 export function CreateThreadModal({ isOpen, onClose, onCreateThread }: CreateThreadModalProps) {
   const [topic, setTopic] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const { colorScheme } = useColorScheme();
   const router = useRouter();
 
   const handleCreate = async () => {
@@ -55,11 +54,7 @@ export function CreateThreadModal({ isOpen, onClose, onCreateThread }: CreateThr
           <ButtonText>Cancel</ButtonText>
         </Button>
         <Button className="min-w-[100px]" disabled={!isValid || isCreating} onPress={handleCreate}>
-          {isCreating ? (
-            <ButtonSpinner color={colorScheme === "dark" ? "black" : "white"} />
-          ) : (
-            <ButtonText>Create</ButtonText>
-          )}
+          {isCreating ? <LoadingButtonSpinner /> : <ButtonText>Create</ButtonText>}
         </Button>
       </ModalFooter>
     </Modal>

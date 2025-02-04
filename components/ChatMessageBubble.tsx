@@ -2,14 +2,14 @@ import { useMedplumProfile } from "@medplum/react-hooks";
 import { useVideoPlayer } from "expo-video";
 import { VideoView } from "expo-video";
 import { CirclePlay, FileDown, UserRound } from "lucide-react-native";
-import { useColorScheme } from "nativewind";
 import { memo, useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Alert } from "react-native";
 
 import { FullscreenImage } from "@/components/FullscreenImage";
+import { LoadingButtonSpinner } from "@/components/LoadingButtonSpinner";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Button, ButtonIcon, ButtonSpinner, ButtonText } from "@/components/ui/button";
+import { Button, ButtonIcon, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import type { ChatMessage } from "@/models/chat";
@@ -85,7 +85,6 @@ VideoAttachment.displayName = "VideoAttachment";
 
 function FileAttachment({ attachment }: { attachment: AttachmentWithUrl }) {
   const [isDownloading, setIsDownloading] = useState(false);
-  const { colorScheme } = useColorScheme();
 
   const handleShare = useCallback(async () => {
     setIsDownloading(true);
@@ -106,7 +105,7 @@ function FileAttachment({ attachment }: { attachment: AttachmentWithUrl }) {
       disabled={isDownloading}
     >
       {isDownloading ? (
-        <ButtonSpinner color={colorScheme === "dark" ? "black" : "white"} />
+        <LoadingButtonSpinner />
       ) : (
         <ButtonIcon as={FileDown} className="text-typography-100" />
       )}
