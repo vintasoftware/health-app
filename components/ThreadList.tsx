@@ -8,7 +8,6 @@ import { FlatList, ListRenderItem } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Box } from "@/components/ui/box";
 import { Button, ButtonIcon, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
@@ -42,36 +41,34 @@ function ThreadItem({
     <View>
       <Pressable
         onPress={() => onPress()}
-        className="overflow-hidden bg-background-0 active:bg-secondary-100"
+        className="flex-row items-center gap-3 overflow-hidden bg-background-0 p-4 active:bg-secondary-100"
       >
-        <View className="flex-row items-center gap-3 p-4">
-          <Avatar size="md" className="border-2 border-primary-200">
-            <Icon as={UserRound} size="lg" className="stroke-typography-0" />
-            <AvatarImage source={{ uri: avatarURL }} />
-          </Avatar>
+        <Avatar size="md" className="border-2 border-primary-200">
+          <Icon as={UserRound} size="lg" className="stroke-typography-0" />
+          <AvatarImage source={{ uri: avatarURL }} />
+        </Avatar>
 
-          <View className="flex-1">
-            <View className="flex-row items-center gap-2">
-              <Text className="text-sm font-semibold text-typography-900" isTruncated={true}>
-                {isPractitioner ? `${thread.patientName}: ${thread.topic}` : thread.topic}
-              </Text>
-              {profile && thread.getUnreadCount({ profile }) > 0 && (
-                <View className="rounded-full bg-primary-500 px-2 py-0.5">
-                  <Text className="text-xs font-medium text-typography-0">
-                    {thread.getUnreadCount({ profile })}
-                  </Text>
-                </View>
-              )}
-            </View>
-            <Text className="mt-0.5 text-sm text-typography-600" isTruncated={true}>
-              {thread.lastMessage}
+        <View className="flex-1">
+          <View className="flex-row items-center gap-2">
+            <Text className="text-sm font-semibold text-typography-900" isTruncated={true}>
+              {isPractitioner ? `${thread.patientName}: ${thread.topic}` : thread.topic}
             </Text>
+            {profile && thread.getUnreadCount({ profile }) > 0 && (
+              <View className="rounded-full bg-primary-500 px-2 py-0.5">
+                <Text className="text-xs font-medium text-typography-0">
+                  {thread.getUnreadCount({ profile })}
+                </Text>
+              </View>
+            )}
           </View>
-
-          <Text className="mt-1 self-start text-xs text-typography-500">
-            {thread.lastMessageSentAt ? formatTime(thread.lastMessageSentAt) : ""}
+          <Text className="mt-0.5 text-sm text-typography-600" isTruncated={true}>
+            {thread.lastMessage}
           </Text>
         </View>
+
+        <Text className="mt-1 self-start text-xs text-typography-500">
+          {thread.lastMessageSentAt ? formatTime(thread.lastMessageSentAt) : ""}
+        </Text>
       </Pressable>
       <View className="h-[1px] bg-outline-100" />
     </View>
@@ -124,27 +121,23 @@ export function ThreadList({ threads, getAvatarURL, onCreateThread }: ThreadList
 
   if (threads.length === 0) {
     return (
-      <GestureHandlerRootView className="flex-1">
-        <Box className="flex-1 bg-background-50">
-          <EmptyState onCreateThread={onCreateThread} />
-        </Box>
+      <GestureHandlerRootView className="flex-1 bg-background-50">
+        <EmptyState onCreateThread={onCreateThread} />
       </GestureHandlerRootView>
     );
   }
 
   return (
-    <GestureHandlerRootView className="flex-1">
-      <Box className="flex-1 bg-background-50">
-        <FlatList
-          data={threads}
-          renderItem={renderItem}
-          keyExtractor={(thread) => thread.id}
-          showsVerticalScrollIndicator={true}
-          initialNumToRender={20}
-          windowSize={5}
-          removeClippedSubviews
-        />
-      </Box>
+    <GestureHandlerRootView className="flex-1 bg-background-50">
+      <FlatList
+        data={threads}
+        renderItem={renderItem}
+        keyExtractor={(thread) => thread.id}
+        showsVerticalScrollIndicator={true}
+        initialNumToRender={20}
+        windowSize={5}
+        removeClippedSubviews
+      />
     </GestureHandlerRootView>
   );
 }
