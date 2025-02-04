@@ -10,10 +10,10 @@ import { View } from "@/components/ui/view";
 interface CreateThreadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (topic: string) => Promise<void>;
+  onCreateThread: (topic: string) => Promise<string | undefined>;
 }
 
-export function CreateThreadModal({ isOpen, onClose, onCreate }: CreateThreadModalProps) {
+export function CreateThreadModal({ isOpen, onClose, onCreateThread }: CreateThreadModalProps) {
   const [topic, setTopic] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const { colorScheme } = useColorScheme();
@@ -22,10 +22,12 @@ export function CreateThreadModal({ isOpen, onClose, onCreate }: CreateThreadMod
   const handleCreate = async () => {
     setIsCreating(true);
     try {
-      await onCreate(topic);
-      setTopic("");
-      onClose();
-      router.push(`/thread/${topic}`);
+      const threadId = await onCreateThread(topic);
+      if (threadId) {
+        setTopic("");
+        onClose();
+        router.push(`/thread/${threadId}`);
+      }
     } finally {
       setIsCreating(false);
     }
