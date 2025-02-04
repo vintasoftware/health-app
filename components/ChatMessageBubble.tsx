@@ -147,52 +147,48 @@ export function ChatMessageBubble({
   }, [message.id, onSelect, selectionEnabled]);
 
   return (
-    <View className={`relative ${wrapperAlignment} w-full`}>
+    <Pressable
+      className={`relative w-full ${wrapperAlignment}`}
+      onLongPress={handleLongPress}
+      onPress={handlePress}
+      delayLongPress={200}
+    >
       {/* Selection background */}
       {selected && <View className="absolute inset-0 bg-background-100" />}
 
-      <Pressable
-        className="flex-1 p-2"
-        onLongPress={handleLongPress}
-        onPress={handlePress}
-        delayLongPress={200}
-      >
-        <View className={`max-w-[80%] ${wrapperAlignment}`}>
-          <View className={`${flexDirection} items-end gap-2`}>
-            <Avatar
-              size="sm"
-              className={`border ${selected ? "border-primary-500" : "border-primary-200"}`}
-            >
-              <Icon as={UserRound} size="sm" className="stroke-typography-0" />
-              {avatarURL && <AvatarImage source={{ uri: avatarURL }} />}
-            </Avatar>
-            <View
-              className={`rounded-xl border p-3 ${bubbleColor} ${borderColor} ${
-                selected ? "border-primary-500" : ""
-              }`}
-            >
-              {message.attachment?.url && (
-                <View className="mb-1">
-                  {hasImage ? (
-                    <FullscreenImage
-                      uri={message.attachment.url}
-                      alt={`Attachment ${message.attachment.title}`}
-                      thumbnailWidth={mediaStyles.media.width}
-                      thumbnailHeight={mediaStyles.media.height}
-                    />
-                  ) : hasVideo ? (
-                    <VideoAttachment uri={message.attachment.url} />
-                  ) : (
-                    <FileAttachment attachment={message.attachment as AttachmentWithUrl} />
-                  )}
-                </View>
+      <View className={`max-w-[80%] ${wrapperAlignment} p-2 ${flexDirection} items-end gap-2`}>
+        <Avatar
+          size="sm"
+          className={`border ${selected ? "border-primary-500" : "border-primary-200"}`}
+        >
+          <Icon as={UserRound} size="sm" className="stroke-typography-0" />
+          {avatarURL && <AvatarImage source={{ uri: avatarURL }} />}
+        </Avatar>
+        <View
+          className={`rounded-xl border p-3 ${bubbleColor} ${borderColor} ${
+            selected ? "border-primary-500" : ""
+          }`}
+        >
+          {message.attachment?.url && (
+            <View className="mb-1">
+              {hasImage ? (
+                <FullscreenImage
+                  uri={message.attachment.url}
+                  alt={`Attachment ${message.attachment.title}`}
+                  thumbnailWidth={mediaStyles.media.width}
+                  thumbnailHeight={mediaStyles.media.height}
+                />
+              ) : hasVideo ? (
+                <VideoAttachment uri={message.attachment.url} />
+              ) : (
+                <FileAttachment attachment={message.attachment as AttachmentWithUrl} />
               )}
-              {Boolean(message.text) && <Text className="text-typography-900">{message.text}</Text>}
-              <Text className="mt-1 text-xs text-typography-600">{formatTime(message.sentAt)}</Text>
             </View>
-          </View>
+          )}
+          {Boolean(message.text) && <Text className="text-typography-900">{message.text}</Text>}
+          <Text className="mt-1 text-xs text-typography-600">{formatTime(message.sentAt)}</Text>
         </View>
-      </Pressable>
-    </View>
+      </View>
+    </Pressable>
   );
 }
