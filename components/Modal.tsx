@@ -56,7 +56,7 @@ export function Modal({ isOpen, onClose, children }: ModalProps) {
         style={{ paddingTop: insets.top }}
       >
         <Pressable className="absolute inset-0" onPress={onClose} />
-        <View className="mx-4 overflow-hidden rounded-2xl bg-background-0 shadow-hard-5">
+        <View className="mx-4 overflow-hidden rounded-2xl border border-outline-100 bg-background-0 shadow-hard-5">
           {children}
         </View>
       </View>
