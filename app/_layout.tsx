@@ -22,6 +22,7 @@ import {
 } from "react-native-safe-area-context";
 
 import { GluestackUIProvider } from "@/components/gluestack-ui-provider";
+import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { oauth2ClientId } from "@/utils/medplum-oauth2";
 
 export const unstable_settings = {
@@ -60,15 +61,17 @@ export default function RootLayout() {
         <StatusBar />
         <SafeAreaView className="h-full bg-background-0 md:w-full">
           <MedplumProvider medplum={medplum}>
-            <GestureHandlerRootView className="flex-1">
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  // Prevents flickering:
-                  animation: "none",
-                }}
-              />
-            </GestureHandlerRootView>
+            <NotificationsProvider>
+              <GestureHandlerRootView className="flex-1">
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    // Prevents flickering:
+                    animation: "none",
+                  }}
+                />
+              </GestureHandlerRootView>
+            </NotificationsProvider>
           </MedplumProvider>
         </SafeAreaView>
       </SafeAreaProvider>
