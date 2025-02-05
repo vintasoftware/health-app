@@ -2,14 +2,14 @@ import { useMedplumProfile } from "@medplum/react-hooks";
 import { useVideoPlayer } from "expo-video";
 import { VideoView } from "expo-video";
 import { CirclePlay, FileDown, UserRound } from "lucide-react-native";
-import { useColorScheme } from "nativewind";
 import { memo, useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Alert } from "react-native";
 
 import { FullscreenImage } from "@/components/FullscreenImage";
+import { LoadingButtonSpinner } from "@/components/LoadingButtonSpinner";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Button, ButtonIcon, ButtonSpinner, ButtonText } from "@/components/ui/button";
+import { Button, ButtonIcon, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import type { ChatMessage } from "@/models/chat";
@@ -20,6 +20,9 @@ import { isMediaExpired, mediaKey, shareFile } from "@/utils/media";
 interface ChatMessageBubbleProps {
   message: ChatMessage;
   avatarURL?: string | null;
+  selected?: boolean;
+  onSelect?: (messageId: string) => void;
+  selectionEnabled?: boolean;
 }
 
 const mediaStyles = StyleSheet.create({
@@ -82,7 +85,6 @@ VideoAttachment.displayName = "VideoAttachment";
 
 function FileAttachment({ attachment }: { attachment: AttachmentWithUrl }) {
   const [isDownloading, setIsDownloading] = useState(false);
-  const { colorScheme } = useColorScheme();
 
   const handleShare = useCallback(async () => {
     setIsDownloading(true);
@@ -103,7 +105,7 @@ function FileAttachment({ attachment }: { attachment: AttachmentWithUrl }) {
       disabled={isDownloading}
     >
       {isDownloading ? (
-        <ButtonSpinner color={colorScheme === "dark" ? "black" : "white"} />
+        <LoadingButtonSpinner />
       ) : (
         <ButtonIcon as={FileDown} className="text-typography-100" />
       )}
@@ -114,7 +116,13 @@ function FileAttachment({ attachment }: { attachment: AttachmentWithUrl }) {
   );
 }
 
-export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps) {
+export function ChatMessageBubble({
+  message,
+  avatarURL,
+  selected = false,
+  onSelect,
+  selectionEnabled = false,
+}: ChatMessageBubbleProps) {
   const profile = useMedplumProfile();
   const isPatientMessage = message.senderType === "Patient";
   const isCurrentUser = message.senderType === profile?.resourceType;
@@ -125,14 +133,42 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
   const bubbleColor = isPatientMessage ? "bg-secondary-200" : "bg-tertiary-200";
   const borderColor = isPatientMessage ? "border-secondary-300" : "border-tertiary-300";
   const flexDirection = isCurrentUser ? "flex-row-reverse" : "flex-row";
+
+  const handleLongPress = useCallback(() => {
+    if (onSelect) {
+      onSelect(message.id);
+    }
+  }, [message.id, onSelect]);
+
+  const handlePress = useCallback(() => {
+    if (selectionEnabled && onSelect) {
+      onSelect(message.id);
+    }
+  }, [message.id, onSelect, selectionEnabled]);
+
   return (
-    <View className={`mx-2 max-w-[80%] p-2 ${wrapperAlignment}`}>
-      <View className={`${flexDirection} items-end gap-2`}>
-        <Avatar size="sm" className="border border-primary-200">
+    <Pressable
+      className={`relative w-full ${wrapperAlignment}`}
+      onLongPress={handleLongPress}
+      onPress={handlePress}
+      delayLongPress={200}
+    >
+      {/* Selection background */}
+      {selected && <View className="absolute inset-0 bg-background-100" />}
+
+      <View className={`max-w-[80%] ${wrapperAlignment} p-2 ${flexDirection} items-end gap-2`}>
+        <Avatar
+          size="sm"
+          className={`border ${selected ? "border-primary-500" : "border-primary-200"}`}
+        >
           <Icon as={UserRound} size="sm" className="stroke-typography-0" />
           {avatarURL && <AvatarImage source={{ uri: avatarURL }} />}
         </Avatar>
-        <View className={`rounded-xl border p-3 ${bubbleColor} ${borderColor}`}>
+        <View
+          className={`rounded-xl border p-3 ${bubbleColor} ${borderColor} ${
+            selected ? "border-primary-500" : ""
+          }`}
+        >
           {message.attachment?.url && (
             <View className="mb-1">
               {hasImage ? (
@@ -153,6 +189,6 @@ export function ChatMessageBubble({ message, avatarURL }: ChatMessageBubbleProps
           <Text className="mt-1 text-xs text-typography-600">{formatTime(message.sentAt)}</Text>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }

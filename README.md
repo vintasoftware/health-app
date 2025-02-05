@@ -21,6 +21,7 @@ The app implements a secure live chat system following Medplum's ["Organizing Co
   - Send chat messages by creating new `Communication` FHIR resources
   - Real-time message updates using Medplum WebSocket `Subscription`
   - Auto-update of message status: sent, received, read, directly on `Communication` FHIR resource
+  - Message deletion
 
 - **Media Support**
   - Image and video attachments
@@ -112,6 +113,10 @@ NOTE: Login will not work yet, because Medplum's OAuth2 is not set. See the next
     EXPO_PUBLIC_MEDPLUM_WEB_CLIENT_ID=your_web_client_id
     EXPO_PUBLIC_MEDPLUM_NATIVE_CLIENT_ID=your_native_client_id
     ```
+
+### Configuring Access Policies (for production)
+
+The app implements message deletion functionality, which requires proper access control in production. You need to set up [Access Policies](https://www.medplum.com/docs/access/access-policies) in Medplum to ensure patients can only read/update/delete their own messages.
 
 ### Testing
 

@@ -208,6 +208,13 @@ interface ChatContextType {
     threadId: string;
     messageId: string;
   }) => Promise<void>;
+  deleteMessages: ({
+    threadId,
+    messageIds,
+  }: {
+    threadId: string;
+    messageIds: string[];
+  }) => Promise<void>;
 }
 
 export const ChatContext = createContext<ChatContextType>({
@@ -220,6 +227,7 @@ export const ChatContext = createContext<ChatContextType>({
   receiveThread: async () => {},
   sendMessage: async () => {},
   markMessageAsRead: async () => {},
+  deleteMessages: async () => {},
 });
 
 interface ChatProviderProps {
@@ -480,6 +488,31 @@ export function ChatProvider({
     [threadCommMap, medplum, profile],
   );
 
+  const deleteMessages = useCallback(
+    async ({ threadId, messageIds }: { threadId: string; messageIds: string[] }) => {
+      if (!profile) return;
+
+      try {
+        // Delete each message in parallel
+        await Promise.all(
+          messageIds.map((messageId) => medplum.deleteResource("Communication", messageId)),
+        );
+
+        // Update the thread's last changed date to trigger a refresh
+        await touchThreadLastChanged({
+          medplum,
+          threadId,
+          value: new Date().toISOString(),
+        });
+      } catch (error) {
+        console.error("ChatContext: Error deleting messages:", error);
+        onError?.(error as Error);
+        throw error;
+      }
+    },
+    [medplum, profile, onError],
+  );
+
   const value = {
     threads: threadsOut,
     isLoadingThreads,
@@ -490,6 +523,7 @@ export function ChatProvider({
     receiveThread,
     sendMessage,
     markMessageAsRead,
+    deleteMessages,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

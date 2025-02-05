@@ -774,4 +774,105 @@ describe("useSingleThread", () => {
       expect(message!.read).toBe(false);
     });
   });
+
+  test("deleteMessages deletes multiple messages and updates thread", async () => {
+    const { medplum } = await setup();
+    const deleteSpy = jest.spyOn(medplum, "deleteResource");
+    const patchSpy = jest.spyOn(medplum, "patchResource");
+
+    const { result } = renderHook(() => useSingleThread({ threadId: "test-thread" }), {
+      wrapper: createWrapper(medplum),
+    });
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    // Delete both messages
+    await act(async () => {
+      await result.current.deleteMessages({
+        threadId: "test-thread",
+        messageIds: ["msg-1", "msg-2"],
+      });
+    });
+
+    // Verify messages were deleted
+    expect(deleteSpy).toHaveBeenCalledTimes(2);
+    expect(deleteSpy).toHaveBeenCalledWith("Communication", "msg-1");
+    expect(deleteSpy).toHaveBeenCalledWith("Communication", "msg-2");
+
+    // Verify thread last changed date was updated
+    expect(patchSpy).toHaveBeenCalledWith(
+      "Communication",
+      "test-thread",
+      expect.arrayContaining([
+        expect.objectContaining({
+          op: "add",
+          path: "/extension/0/valueDateTime",
+          value: expect.any(String),
+        }),
+      ]),
+    );
+  });
+
+  test("deleteMessages handles errors", async () => {
+    const { medplum } = await setup();
+    const onErrorMock = jest.fn();
+    const error = new Error("Failed to delete message");
+    jest.spyOn(medplum, "deleteResource").mockRejectedValue(error);
+
+    const { result } = renderHook(() => useSingleThread({ threadId: "test-thread" }), {
+      wrapper: createWrapper(medplum, { onError: onErrorMock }),
+    });
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    // Attempt to delete messages
+    await act(async () => {
+      try {
+        await result.current.deleteMessages({
+          threadId: "test-thread",
+          messageIds: ["msg-1"],
+        });
+        fail("Expected deleteMessages to throw");
+      } catch (e) {
+        expect(e).toBe(error);
+      }
+    });
+
+    // Verify error was propagated
+    expect(onErrorMock).toHaveBeenCalledWith(error);
+  });
+
+  test("deleteMessages does nothing if no profile", async () => {
+    const { medplum } = await setup();
+    const deleteSpy = jest.spyOn(medplum, "deleteResource");
+
+    // Clear the profile
+    medplum.setProfile(undefined);
+
+    const { result } = renderHook(() => useSingleThread({ threadId: "test-thread" }), {
+      wrapper: createWrapper(medplum),
+    });
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    // Attempt to delete messages
+    await act(async () => {
+      await result.current.deleteMessages({
+        threadId: "test-thread",
+        messageIds: ["msg-1"],
+      });
+    });
+
+    // Verify no deletion was attempted
+    expect(deleteSpy).not.toHaveBeenCalled();
+  });
 });

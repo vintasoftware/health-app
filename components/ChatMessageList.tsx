@@ -10,16 +10,31 @@ import { LoadingDots } from "./LoadingDots";
 interface ChatMessageListProps {
   messages: ChatMessage[];
   loading: boolean;
+  selectedMessages?: Set<string>;
+  onMessageSelect?: (messageId: string) => void;
+  selectionEnabled?: boolean;
 }
 
-export function ChatMessageList({ messages, loading }: ChatMessageListProps) {
+export function ChatMessageList({
+  messages,
+  loading,
+  selectedMessages = new Set(),
+  onMessageSelect,
+  selectionEnabled = false,
+}: ChatMessageListProps) {
   const { getAvatarURL } = useAvatars(messages.map((message) => message.avatarRef));
 
   const renderItem: ListRenderItem<ChatMessage> = useCallback(
     ({ item: message }) => (
-      <ChatMessageBubble message={message} avatarURL={getAvatarURL(message.avatarRef)} />
+      <ChatMessageBubble
+        message={message}
+        avatarURL={getAvatarURL(message.avatarRef)}
+        selected={selectedMessages.has(message.id)}
+        onSelect={onMessageSelect}
+        selectionEnabled={selectionEnabled}
+      />
     ),
-    [getAvatarURL],
+    [getAvatarURL, selectedMessages, onMessageSelect, selectionEnabled],
   );
 
   return (
