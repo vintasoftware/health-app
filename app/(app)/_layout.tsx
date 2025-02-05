@@ -13,11 +13,11 @@ export default function AppLayout() {
   const isPractitioner = profile?.resourceType === "Practitioner";
 
   useEffect(() => {
-    if (profile && medplum.getActiveLogin()) {
+    if (profile) {
       // Set up push notifications when user is logged in
       setUpPushNotifications();
     }
-  }, [medplum, profile, setUpPushNotifications]);
+  }, [profile, setUpPushNotifications]);
 
   if (medplum.isLoading()) {
     return <LoadingScreen />;

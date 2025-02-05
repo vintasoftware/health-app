@@ -25,7 +25,7 @@ const NotificationsContext = createContext<NotificationsContextType>({
   setUpPushNotifications: async () => false,
 });
 
-async function registerForPushNotificationsAsync() {
+async function getPushToken() {
   let token;
 
   if (!Device.isDevice) {
@@ -56,36 +56,34 @@ async function registerForPushNotificationsAsync() {
   }
 }
 
-function updateMedplumPushToken(medplum: MedplumClient, token: string): Promise<void> {
-  return (async () => {
-    try {
-      const profile = medplum.getProfile();
-      if (!profile) return;
+async function updateProfilePushToken(medplum: MedplumClient, token: string) {
+  try {
+    const profile = medplum.getProfile();
+    if (!profile) return;
 
-      // Check if token already exists and matches
-      const existingToken = profile.extension?.find(
-        (e) => e.url === "https://medplum.com/push-token",
-      )?.valueString;
+    // Check if token already exists and matches
+    const existingToken = profile.extension?.find(
+      (e) => e.url === "https://medplum.com/push-token",
+    )?.valueString;
 
-      if (existingToken === token) {
-        return; // Token hasn't changed, no need to update
-      }
-
-      // Update the token
-      const extensions =
-        profile.extension?.filter((e) => e.url !== "https://medplum.com/push-token") || [];
-      extensions.push({
-        url: "https://medplum.com/push-token",
-        valueString: token,
-      });
-      await medplum.updateResource({
-        ...profile,
-        extension: extensions,
-      });
-    } catch (error) {
-      console.error("Error updating push token in Medplum:", error);
+    if (existingToken === token) {
+      return; // Token hasn't changed, no need to update
     }
-  })();
+
+    // Update the token
+    const extensions =
+      profile.extension?.filter((e) => e.url !== "https://medplum.com/push-token") || [];
+    extensions.push({
+      url: "https://medplum.com/push-token",
+      valueString: token,
+    });
+    await medplum.updateResource({
+      ...profile,
+      extension: extensions,
+    });
+  } catch (error) {
+    console.error("Error updating push token in Medplum:", error);
+  }
 }
 
 function handleMessageNotificationInteraction(response: Notifications.NotificationResponse) {
@@ -112,9 +110,9 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     const isEnabled = finalStatus === "granted";
     setIsNotificationsEnabled(isEnabled);
     if (isEnabled) {
-      const token = await registerForPushNotificationsAsync();
+      const token = await getPushToken();
       if (token) {
-        await updateMedplumPushToken(medplum, token);
+        await updateProfilePushToken(medplum, token);
       }
 
       // Set up notification listeners
