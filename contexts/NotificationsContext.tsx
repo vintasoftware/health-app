@@ -28,7 +28,7 @@ const NotificationsContext = createContext<NotificationsContextType>({
 async function getPushToken() {
   let token;
 
-  if (!Device.isDevice) {
+  if (!Device.isDevice || Platform.OS === "web") {
     return;
   }
 
@@ -99,6 +99,8 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const medplum = useMedplum();
 
   const setUpPushNotifications = useCallback(async () => {
+    if (Platform.OS === "web") return false;
+
     // Check and request notification permissions
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
@@ -125,6 +127,8 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
   // Effect to handle notifications when app is terminated
   useEffect(() => {
+    if (Platform.OS === "web") return;
+
     const getInitialNotification = async () => {
       const lastNotificationResponse = await Notifications.getLastNotificationResponseAsync();
       if (lastNotificationResponse) {
