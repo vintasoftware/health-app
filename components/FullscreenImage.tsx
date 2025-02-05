@@ -99,7 +99,8 @@ export const FullscreenImage = memo(
           <ModalContent className="m-0 h-full w-full rounded-none border-0 bg-background-dark p-0">
             <View className="relative flex-1">
               <ModalCloseButton
-                className={`absolute right-4 top-[${insets.top}px] z-10 mt-2 rounded-full bg-background-0/80 p-2 active:bg-secondary-100`}
+                className="absolute right-4 z-10 mt-2 rounded-full bg-background-0/80 p-2 active:bg-secondary-100"
+                style={{ top: insets.top }}
                 onPress={() => {
                   setIsFullscreenOpen(false);
                   scale.value = 1;
