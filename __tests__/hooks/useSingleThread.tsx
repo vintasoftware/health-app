@@ -27,6 +27,7 @@ const mockThread: Communication = {
   id: "test-thread",
   status: "completed",
   sent: "2024-01-01T12:00:00Z",
+  subject: createReference(mockPatient),
   payload: [{ contentString: "Thread Topic" }],
   extension: [{ url: "https://medplum.com/last-changed", valueDateTime: "2024-01-01T12:00:00Z" }],
 };
@@ -37,6 +38,7 @@ const mockMessage1: Communication = {
   status: "in-progress",
   sent: "2024-01-01T12:01:00Z",
   sender: createReference(mockPatient),
+  subject: createReference(mockPatient),
   payload: [{ contentString: "Hello" }],
   partOf: [createReference(mockThread)],
 };
@@ -47,6 +49,7 @@ const mockMessage2: Communication = {
   status: "in-progress",
   sent: "2024-01-01T12:02:00Z",
   sender: createReference(mockPractitioner),
+  subject: createReference(mockPatient),
   payload: [{ contentString: "Hi there" }],
   partOf: [createReference(mockThread)],
 };
@@ -207,6 +210,10 @@ describe("useSingleThread", () => {
         resourceType: "Communication",
         status: "in-progress",
         sender: {
+          reference: "Patient/test-patient",
+          display: "John Doe",
+        },
+        subject: {
           reference: "Patient/test-patient",
           display: "John Doe",
         },
