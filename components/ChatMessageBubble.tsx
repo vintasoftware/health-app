@@ -73,7 +73,7 @@ const VideoAttachment = memo(
           onPress={handlePlayPress}
           className="absolute inset-0 items-center justify-center bg-background-dark/50 dark:bg-background-dark/90"
         >
-          <Icon as={CirclePlay} size="xl" className="text-typography-0" />
+          <Icon as={CirclePlay} size="xl" className="text-white" />
         </Pressable>
       </View>
     );
