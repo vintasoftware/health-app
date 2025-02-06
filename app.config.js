@@ -33,6 +33,10 @@ export default {
       ],
       package: "com.vinta.healthapp",
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./_dev/google-services.json",
+      notification: {
+        androidMode: "collapse",
+        androidCollapsedTitle: "New messages",
+      },
     },
     web: {
       bundler: "metro",
