@@ -9,6 +9,7 @@ import { ThreadList } from "@/components/ThreadList";
 import { ThreadListHeader } from "@/components/ThreadListHeader";
 import { useAvatars } from "@/hooks/useAvatars";
 import { useThreads } from "@/hooks/useThreads";
+import { clearProfilePushToken } from "@/utils/notifications";
 
 export default function Index() {
   const { medplum, profile } = useMedplumContext();
@@ -21,7 +22,8 @@ export default function Index() {
   const { getAvatarURL, isLoading: isAvatarsLoading } = useAvatars(avatarReferences);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
+    await clearProfilePushToken(medplum);
     medplum.signOut();
     router.replace("/sign-in");
   }, [medplum, router]);

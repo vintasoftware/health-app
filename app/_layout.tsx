@@ -14,6 +14,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useColorScheme } from "nativewind";
 import { useEffect } from "react";
+import { Alert } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   initialWindowMetrics,
@@ -36,6 +37,7 @@ const medplum = new MedplumClient({
   clientId: oauth2ClientId,
   storage: new ExpoClientStorage(),
   onUnauthenticated: () => {
+    Alert.alert("Your session has expired", "Please sign in again.");
     router.replace("/sign-in");
   },
 });
