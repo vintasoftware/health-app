@@ -1,6 +1,6 @@
 import { MedplumClient } from "@medplum/core";
 import { useMedplumContext } from "@medplum/react-hooks";
-import { Redirect, router, Slot } from "expo-router";
+import { Redirect, router, Stack } from "expo-router";
 import { useEffect } from "react";
 
 import { LoadingScreen } from "@/components/LoadingScreen";
@@ -68,7 +68,13 @@ export default function AppLayout() {
   return (
     <ChatProvider>
       {isPractitioner && <PractitionerBanner />}
-      <Slot />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          // Prevents flickering:
+          animation: "none",
+        }}
+      />
     </ChatProvider>
   );
 }
