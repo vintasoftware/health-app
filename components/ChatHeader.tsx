@@ -57,11 +57,8 @@ function BackButton({ isSelectionMode, onCancelSelection }: BackButtonProps) {
   const handlePress = () => {
     if (isSelectionMode) {
       onCancelSelection?.();
-    } else if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace("/");
     }
+    router.dismissTo("/");
   };
 
   return (

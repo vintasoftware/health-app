@@ -14,6 +14,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useColorScheme } from "nativewind";
 import { useEffect } from "react";
+import { Alert } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   initialWindowMetrics,
@@ -22,6 +23,7 @@ import {
 } from "react-native-safe-area-context";
 
 import { GluestackUIProvider } from "@/components/gluestack-ui-provider";
+import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { oauth2ClientId } from "@/utils/medplum-oauth2";
 
 export const unstable_settings = {
@@ -35,6 +37,7 @@ const medplum = new MedplumClient({
   clientId: oauth2ClientId,
   storage: new ExpoClientStorage(),
   onUnauthenticated: () => {
+    Alert.alert("Your session has expired", "Please sign in again.");
     router.replace("/sign-in");
   },
 });
@@ -60,15 +63,17 @@ export default function RootLayout() {
         <StatusBar />
         <SafeAreaView className="h-full bg-background-0 md:w-full">
           <MedplumProvider medplum={medplum}>
-            <GestureHandlerRootView className="flex-1">
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  // Prevents flickering:
-                  animation: "none",
-                }}
-              />
-            </GestureHandlerRootView>
+            <NotificationsProvider>
+              <GestureHandlerRootView className="flex-1">
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    // Prevents flickering:
+                    animation: "none",
+                  }}
+                />
+              </GestureHandlerRootView>
+            </NotificationsProvider>
           </MedplumProvider>
         </SafeAreaView>
       </SafeAreaProvider>

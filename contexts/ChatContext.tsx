@@ -11,6 +11,7 @@ import {
   Communication,
   CommunicationPayload,
   Patient,
+  Reference,
 } from "@medplum/fhirtypes";
 import { useMedplumContext, useSubscription } from "@medplum/react-hooks";
 import * as ImagePicker from "expo-image-picker";
@@ -150,12 +151,14 @@ async function touchThreadLastChanged({
 async function createThreadMessageComm({
   medplum,
   profile,
+  patientRef,
   message,
   threadId,
   attachment,
 }: {
   medplum: MedplumClient;
   profile: ProfileResource;
+  patientRef: Reference<Patient>;
   message: string;
   threadId: string;
   attachment?: Attachment;
@@ -179,6 +182,7 @@ async function createThreadMessageComm({
     status: "in-progress",
     sent: new Date().toISOString(),
     sender: createReference(profile),
+    subject: patientRef,
     payload,
     partOf: [{ reference: `Communication/${threadId}` }],
   } satisfies Communication);
@@ -430,10 +434,15 @@ export function ChatProvider({
           });
         }
 
+        // Find the patient of the thread
+        const thread = threads.find((t) => t.id === threadId);
+        if (!thread) return;
+
         // Create the message
         const newCommunication = await createThreadMessageComm({
           medplum,
           profile,
+          patientRef: thread.subject as Reference<Patient>,
           message: message ?? "",
           threadId,
           attachment: uploadedAttachment,
@@ -456,7 +465,7 @@ export function ChatProvider({
         throw err;
       }
     },
-    [profile, medplum, onError],
+    [profile, threads, medplum, onError],
   );
 
   const markMessageAsRead = useCallback(
