@@ -24,7 +24,9 @@ const NotificationsContext = createContext<NotificationsContextType>({
   setUpPushNotifications: async () => false,
 });
 
+// Handle notification interaction (e.g. clicking on a notification)
 function handleMessageNotificationInteraction(response: Notifications.NotificationResponse) {
+  // Redirect to thread after user clicks on notification
   const data = response.notification.request.content.data;
   if (data.threadId) {
     router.push(`/thread/${data.threadId}`);
