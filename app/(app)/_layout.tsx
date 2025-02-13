@@ -47,6 +47,7 @@ export default function AppLayout() {
   // Ensure profile is loaded or loading,
   // to avoid app getting stuck in medplum.isLoading() state
   // when an error occurs in the internal profilePromise (due to server or network issues)
+  // See: https://github.com/medplum/medplum/issues/5933
   useEffect(() => {
     retryMedplumProfile(medplum);
   }, [medplum]);
