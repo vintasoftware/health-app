@@ -16,15 +16,11 @@ import { Platform } from "react-native";
  * ```
  */
 export class PushNotificationTokenManager {
-  private medplum: MedplumClient;
-
   /**
    * Creates a new instance of PushNotificationTokenManager.
    * @param medplum - The MedplumClient instance used for API operations
    */
-  constructor(medplum: MedplumClient) {
-    this.medplum = medplum;
-  }
+  constructor(private medplum: MedplumClient) {}
 
   /**
    * Generates a new Expo push notification token.
