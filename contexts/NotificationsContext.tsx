@@ -1,11 +1,20 @@
 import { useMedplum } from "@medplum/react-hooks";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Platform } from "react-native";
 
-import { getPushToken, updateProfilePushToken } from "@/utils/notifications";
+import { PushNotificationTokenManager } from "@/utils/notifications";
 
+// Configure default notification handling behavior
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -24,7 +33,12 @@ const NotificationsContext = createContext<NotificationsContextType>({
   setUpPushNotifications: async () => false,
 });
 
-// Handle notification interaction (e.g. clicking on a notification)
+/**
+ * Handles user interaction with a notification (e.g., tapping on it).
+ * Currently supports navigation to chat threads when a message notification is tapped.
+ *
+ * @param response - The notification response containing interaction details
+ */
 function handleMessageNotificationInteraction(response: Notifications.NotificationResponse) {
   // Redirect to thread after user clicks on notification
   const data = response.notification.request.content.data;
@@ -33,11 +47,33 @@ function handleMessageNotificationInteraction(response: Notifications.Notificati
   }
 }
 
+/**
+ * Provider component that manages push notification state and setup.
+ * Handles permission requests, token management, and notification interactions.
+ *
+ * @example
+ * ```tsx
+ * function App() {
+ *   return (
+ *     <NotificationsProvider>
+ *       <YourApp />
+ *     </NotificationsProvider>
+ *   );
+ * }
+ * ```
+ */
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
   const responseListener = useRef<Notifications.EventSubscription>();
   const medplum = useMedplum();
+  const tokenManager = useMemo(() => new PushNotificationTokenManager(medplum), [medplum]);
 
+  /**
+   * Sets up push notifications for the app.
+   * Handles permission requests, token generation, and notification listeners.
+   *
+   * @returns A promise that resolves to true if notifications were successfully enabled
+   */
   const setUpPushNotifications = useCallback(async () => {
     if (Platform.OS === "web") return false;
 
@@ -52,10 +88,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     const isEnabled = finalStatus === "granted";
     setIsNotificationsEnabled(isEnabled);
     if (isEnabled) {
-      const token = await getPushToken();
-      if (token) {
-        await updateProfilePushToken(medplum, token);
-      }
+      await tokenManager.updateProfilePushToken();
 
       // Set up notification listeners
       responseListener.current = Notifications.addNotificationResponseReceivedListener(
@@ -63,9 +96,10 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       );
     }
     return isEnabled;
-  }, [medplum]);
+  }, [tokenManager]);
 
-  // Effect to handle notifications when app is reopened from terminated state
+  // Handle notifications when app is reopened from terminated state
+  // e.g. tapping on a notification after the app was closed
   useEffect(() => {
     if (Platform.OS === "web") return;
 
@@ -79,7 +113,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     getInitialNotification();
   }, []);
 
-  // Cleanup
+  // Clean up
   useEffect(() => {
     return () => {
       responseListener.current?.remove();
@@ -98,6 +132,20 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   );
 }
 
+/**
+ * Hook to access the push notifications context.
+ * Provides access to notification state and setup functionality.
+ *
+ * @returns The notifications context value
+ *
+ * @example
+ * ```tsx
+ * function YourComponent() {
+ *   const { isNotificationsEnabled, setUpPushNotifications } = useNotifications();
+ *   // ...
+ * }
+ * ```
+ */
 export function useNotifications() {
   return useContext(NotificationsContext);
 }
