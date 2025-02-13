@@ -180,20 +180,30 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     return;
   }
 
+  // Skip if there's no sender
+  if (!communication.sender) {
+    return;
+  }
+
   // Get the thread
   const thread = await medplum.readReference(communication.partOf[0]);
   if (!thread || thread.resourceType !== "Communication") {
     return;
   }
 
+  // Skip if there's no patient (subject of the thread)
+  if (!thread.subject) {
+    return;
+  }
+
   // Get the patient (subject of the thread)
-  const patient = await medplum.readReference(thread.subject!);
+  const patient = await medplum.readReference(thread.subject);
   if (!patient || patient.resourceType !== "Patient") {
     return;
   }
 
   // Get the sender
-  const sender = await medplum.readReference(communication.sender!);
+  const sender = await medplum.readReference(communication.sender);
   if (!sender || (sender.resourceType !== "Patient" && sender.resourceType !== "Practitioner")) {
     return;
   }
