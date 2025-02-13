@@ -67,7 +67,7 @@ All communication with Medplum is done through headless hooks and the `ChatConte
 
 ### Installation
 
-1. Install dependencies:
+Install dependencies:
 
     ```bash
     npm install
@@ -149,6 +149,12 @@ The app uses [Expo Push Notifications](https://docs.expo.dev/push-notifications/
    4. Click "OK" to save
 
 4. The app will automatically request notification permissions and store the Expo push token in the user's profile when they log in.
+
+Push notifications do not work on the web, nor emulators, only on physical devices. To test push notifications, do the following:
+
+1. [Get push notifications credentials for development builds](https://docs.expo.dev/push-notifications/push-notifications-setup/#get-credentials-for-development-builds)
+2. [Build the app with eas](https://docs.expo.dev/build/setup/)
+3. Run the app on a physical device by reading the QR code from the terminal
 
 ### Configuring Access Policies (for production)
 
