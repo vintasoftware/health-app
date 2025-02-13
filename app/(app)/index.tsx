@@ -9,6 +9,7 @@ import { ThreadList } from "@/components/ThreadList";
 import { ThreadListHeader } from "@/components/ThreadListHeader";
 import { useAvatars } from "@/hooks/useAvatars";
 import { useThreads } from "@/hooks/useThreads";
+import { PushNotificationTokenManager } from "@/utils/notifications";
 
 export default function Index() {
   const { medplum, profile } = useMedplumContext();
@@ -20,11 +21,14 @@ export default function Index() {
   );
   const { getAvatarURL, isLoading: isAvatarsLoading } = useAvatars(avatarReferences);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const notificationManager = useMemo(() => new PushNotificationTokenManager(medplum), [medplum]);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
+    // Clear push notification token
+    await notificationManager.clearProfilePushToken();
     medplum.signOut();
     router.replace("/sign-in");
-  }, [medplum, router]);
+  }, [medplum, router, notificationManager]);
 
   if (isLoading || isAvatarsLoading) {
     return <LoadingScreen />;

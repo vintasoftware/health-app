@@ -32,6 +32,10 @@ The app implements a secure live chat system following Medplum's ["Organizing Co
   - Create new threads (for patients)
   - Real-time thread updates
 
+- **Push Notifications**
+  - Push notifications for new messages using a [Medplum Bot](https://www.medplum.com/docs/bots/bot-basics) (similar to a AWS Lambda function)
+  - Deep linking to related thread when tapping a notification
+
 - **UI/UX Features**
   - Native look and feel
   - Dark mode / theme support
@@ -63,7 +67,7 @@ All communication with Medplum is done through headless hooks and the `ChatConte
 
 ### Installation
 
-1. Install dependencies:
+Install dependencies:
 
     ```bash
     npm install
@@ -114,6 +118,44 @@ NOTE: Login will not work yet, because Medplum's OAuth2 is not set. See the next
     EXPO_PUBLIC_MEDPLUM_NATIVE_CLIENT_ID=your_native_client_id
     ```
 
+### Configuring Push Notifications
+
+The app uses [Expo Push Notifications](https://docs.expo.dev/push-notifications/overview/) to notify users of new messages. To set this up you need to create a [Medplum Bot](https://www.medplum.com/docs/bots/bot-basics) and a Subscription to trigger the bot:
+
+1. Create a new Bot in your Medplum project:
+   1. Go to the [Bot](https://app.medplum.com/Bot) page in Medplum admin
+   2. Click "New..."
+   3. Give it a name (e.g., "Chat Notifications Bot")
+   4. Copy the bot's ID from the URL after creation
+
+2. Deploy the notification bot code:
+   1. The bot code is in `bots/notification-bot.ts`
+   2. Copy the code and paste it into the bot's Editor in Medplum admin
+   3. Click "Save"
+   4. Click "Deploy"
+
+3. Create a Subscription to trigger the bot:
+   1. Go to the [Subscription](https://app.medplum.com/Subscription) page
+   2. Click "New..."
+   3. Configure the subscription (fill in the bot ID you created in the previous step):
+      ```
+      Status: Active
+      Reason: To send push notifications for new messages
+      Criteria: Communication?part-of:missing=false
+      Channel Type: rest-hook
+      Channel Endpoint: Bot/<YOUR_BOT_ID_HERE>
+      Channel Payload: application/fhir+json
+      ```
+   4. Click "OK" to save
+
+4. The app will automatically request notification permissions and store the Expo push token in the user's profile when they log in.
+
+Push notifications do not work on the web, nor emulators, only on physical devices. To test push notifications, do the following:
+
+1. [Get push notifications credentials for development builds](https://docs.expo.dev/push-notifications/push-notifications-setup/#get-credentials-for-development-builds)
+2. [Build the app with eas](https://docs.expo.dev/build/setup/)
+3. Run the app on a physical device by reading the QR code from the terminal
+
 ### Configuring Access Policies (for production)
 
 The app implements message deletion functionality, which requires proper access control in production. You need to set up [Access Policies](https://www.medplum.com/docs/access/access-policies) in Medplum to ensure patients can only read/update/delete their own messages.
@@ -149,6 +191,7 @@ npm run prepare
 - `/hooks` - React hooks for business logic, headless chat hooks are here
 - `/models` - Business logic models
 - `/utils` - Utility functions
+- `/bots` - Medplum bots (push notification code)
 - `/__tests__` - Test files
 
 All original components from gluestack-ui v2 are kept as-is under the `components/ui` directory, but additional components are added to the same directory to support the app's requirements. Domain-specific components are at `components` directory.
