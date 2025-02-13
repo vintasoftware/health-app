@@ -71,11 +71,11 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Determines if an error is retryable based on its status code
+ * Determines if a response error is retryable based on its status code
  * @param statusCode - HTTP status code
- * @returns Whether the error is retryable
+ * @returns Whether the response error is retryable
  */
-function isRetryableError(statusCode: number): boolean {
+function isRetryableResponse(statusCode: number): boolean {
   // Retry on rate limiting (429) and server errors (5xx)
   return statusCode === 429 || (statusCode >= 500 && statusCode < 600);
 }
@@ -120,7 +120,7 @@ async function sendNotificationBatch(notifications: ExpoNotificationMessage[]): 
 
       // If response is not ok, check if we should retry
       if (!response.ok) {
-        if (isRetryableError(response.status)) {
+        if (isRetryableResponse(response.status)) {
           const error = await response.text();
           lastError = new Error(`Failed to send push notifications (${response.status}): ${error}`);
           continue; // Try again with backoff
@@ -167,6 +167,16 @@ async function sendNotificationBatch(notifications: ExpoNotificationMessage[]): 
  * @param event - The bot event.
  */
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<void> {
+  // Check if the input is a valid Communication resource
+  if (
+    !event.input ||
+    typeof event.input === "string" ||
+    !("resourceType" in event.input) ||
+    event.input.resourceType !== "Communication"
+  ) {
+    throw new Error("Invalid input: expected Communication resource");
+  }
+
   // Get the Communication resource from the event
   const communication = event.input as Communication;
 
@@ -212,7 +222,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   let recipients: (Patient | Practitioner)[] = [];
   if (sender.resourceType === "Patient") {
     // If sender is patient, notify practitioners
-    const practitioners = await medplum.searchResources("Practitioner", {});
+    // (warning: only up to 1000 practitioners are returned)
+    const practitioners = await medplum.searchResources("Practitioner", { _count: 1000 });
     recipients = practitioners;
   } else if (sender.resourceType === "Practitioner") {
     // If sender is practitioner, notify the patient
