@@ -63,7 +63,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     return isEnabled;
   }, [medplum]);
 
-  // Effect to handle notifications when app is terminated
+  // Effect to handle notifications when app is reopened from terminated state
   useEffect(() => {
     if (Platform.OS === "web") return;
 
